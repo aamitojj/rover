@@ -1,0 +1,12 @@
+*.exe
+*.syso
+dist/
+screenshots/
+/web/icon.png
+/winres/icon.ico
+/winres/icon.png
+/installer/offline/
+/offline/
+*.dlpack
+*.dlpack.0*
+/web/fonts/*.woff2
