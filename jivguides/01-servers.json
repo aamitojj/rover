@@ -1,0 +1,60 @@
+[
+ {"id": "guide-add-server-hetzner", "group": "Servers", "title": "Add a Hetzner server", "title_hi": "Hetzner सर्वर जोड़ें",
+  "q": ["add hetzner server", "connect hetzner", "hetzner account token", "rent a server hetzner", "add a server", "get a server", "add vps"],
+  "intro": "Connect your Hetzner Cloud account with an API token. Rover then lists your servers and can create a new one (it shows the price first).",
+  "intro_hi": "Hetzner Cloud खाते को API टोकन से जोड़ें। फिर Rover आपके सर्वर दिखाता है और नया सर्वर भी बना सकता है।",
+  "kb": "hosting-accounts", "do": "connect my hetzner account",
+  "steps": [
+   {"kind": "ui", "go": "#/hosting", "at": "^#/hosting", "sel": "button[data-p=hetzner], #hAdd", "say": "Click Hetzner Cloud (or Connect an account and pick Hetzner).", "say_hi": "Hetzner Cloud पर क्लिक करें।", "done": {"exists": "#f_token"}},
+   {"kind": "external", "site": "Hetzner Cloud console", "url": "https://console.hetzner.cloud/projects", "image": "hetzner-token.svg", "say": "Make an API token in the Hetzner console. Come back here when you have copied it.",
+    "items": [{"text": "Sign in and open your project (or click + New project)."}, {"text": "In the left menu: Security > API tokens > Generate API token."}, {"text": "Description:", "copy": "Rover", "label": "Copy name"}, {"text": "Permissions: choose Read & Write, then Generate."}, {"text": "Copy the token now - Hetzner shows it only once."}]},
+   {"kind": "ui", "at": "^#/hosting", "sel": "#f_token", "say": "Paste the token here. It is saved encrypted on this PC and never sent to any AI.", "say_hi": "टोकन यहाँ पेस्ट करें। यह इसी PC पर एन्क्रिप्ट होकर सेव होता है।", "done": {"filled": "#f_token"}},
+   {"kind": "ui", "at": "^#/hosting", "sel": "#wGo", "say": "Click Check and connect. Rover tests the token and lists your servers.", "done": {"check": "hosting_account:hetzner"}},
+   {"kind": "info", "say": "Done! Your Hetzner servers are listed under Connected accounts. Click Use this server for Rover on one, or Create a server to rent a new one (the price is shown before anything is created)."}
+  ]},
+ {"id": "guide-add-server-oracle", "group": "Servers", "title": "Add a free Oracle Cloud server", "title_hi": "मुफ़्त Oracle Cloud सर्वर जोड़ें",
+  "q": ["oracle cloud free server", "add oracle server", "oracle always free vm", "oci instance", "create oracle vm", "free vps"],
+  "intro": "Oracle's Always Free tier gives you an Ampere A1 server at no cost. You create it in the Oracle console (Rover shows each click), open the web ports, then connect it here.",
+  "intro_hi": "Oracle का Always Free सर्वर मुफ़्त है। Oracle कंसोल में सर्वर बनाएँ, वेब पोर्ट खोलें, फिर यहाँ जोड़ें।",
+  "kb": "provider-oracle",
+  "steps": [
+   {"kind": "external", "site": "Oracle Cloud console", "url": "https://cloud.oracle.com/compute/instances/create", "image": "oracle-create.svg", "say": "Create the server in the Oracle console.",
+    "items": [{"text": "Sign in. Menu > Compute > Instances > Create instance."}, {"text": "Image: click Edit > Change image > Canonical Ubuntu (24.04)."}, {"text": "Shape: Change shape > Ampere > VM.Standard.A1.Flex (Always Free). 2 OCPUs and 12 GB memory is plenty."}, {"text": "Networking: keep 'Assign a public IPv4 address' on."}, {"text": "Add SSH keys: choose Paste public keys and paste Rover's key:", "copy": "{pubkey}", "label": "Copy key"}, {"text": "Click Create. If Oracle says 'Out of capacity', try another availability domain or try again later - free servers are popular."}, {"text": "When the instance is Running, copy its Public IP address."}]},
+   {"kind": "external", "site": "Oracle Cloud console", "url": "https://cloud.oracle.com/networking/vcns", "image": "oracle-ports.svg", "say": "Open the web ports (80 and 443) so visitors can reach the server.",
+    "items": [{"text": "On the instance page click the Subnet link, then the Default Security List."}, {"text": "Click Add Ingress Rules."}, {"text": "Source CIDR:", "copy": "0.0.0.0/0", "label": "Copy"}, {"text": "IP protocol: TCP. Destination port range:", "copy": "80,443", "label": "Copy"}, {"text": "Click Add Ingress Rules. (Ubuntu's own firewall is opened by Rover during setup.)"}]},
+   {"kind": "ui", "go": "#/hosting", "at": "^#/hosting", "sel": "button[data-p=other]", "say": "Back in Rover: click Any other VPS to connect the new server by its IP.", "done": {"exists": "#oIp"}},
+   {"kind": "ui", "at": "^#/hosting", "sel": "#oIp", "say": "Paste the server's Public IP address here. The user name on Oracle Ubuntu is ubuntu.", "done": {"filled": "#oIp"}},
+   {"kind": "ui", "at": "^#/hosting", "sel": "#oUser", "say": "Type ubuntu as the user (Oracle doesn't use root). Leave the password empty: Rover uses the key you pasted.", "done": {"filled": "#oUser"}},
+   {"kind": "ui", "at": "^#/hosting", "sel": "#wGo", "say": "Click Connect.", "done": {"check": "has_server"}},
+   {"kind": "info", "say": "Connected. Open Setup to install the hosting engine; it opens Ubuntu's firewall for web traffic by itself."}
+  ]},
+ {"id": "guide-add-server-other", "group": "Servers", "title": "Connect any server by IP and password", "title_hi": "किसी भी सर्वर को IP और पासवर्ड से जोड़ें",
+  "q": ["connect my vps", "add server by ip", "any other vps", "connect server with password", "ssh connect server"],
+  "intro": "Any Ubuntu or Debian server works. You need its IP address and the root password (or key) from your provider's email or panel.", "kb": "ssh-failed",
+  "steps": [
+   {"kind": "ui", "go": "#/hosting", "at": "^#/hosting", "sel": "button[data-p=other]", "say": "Click Any other VPS.", "done": {"exists": "#oIp"}},
+   {"kind": "ui", "at": "^#/hosting", "sel": "#oIp", "say": "Type the server's IP address (from your provider's welcome email or panel).", "done": {"filled": "#oIp"}},
+   {"kind": "ui", "at": "^#/hosting", "sel": "#oPw", "say": "Type the root password once. Rover installs its own key and does not keep the password.", "optional": true, "done": {"filled": "#oPw"}},
+   {"kind": "ui", "at": "^#/hosting", "sel": "#wGo", "say": "Click Connect.", "done": {"check": "has_server"}}
+  ]},
+ {"id": "guide-add-server-home", "group": "Servers", "title": "Use a computer at home as a server", "title_hi": "घर के कंप्यूटर को सर्वर बनाएँ",
+  "q": ["home server", "raspberry pi server", "old laptop as server", "use my home computer", "host at home", "add home server"],
+  "intro": "An old PC, mini PC or Raspberry Pi on your home network can host sites. Rover logs in once with the password, installs what is needed and connects it to the internet through a free Cloudflare tunnel.",
+  "intro_hi": "घर का पुराना PC या Raspberry Pi भी साइट होस्ट कर सकता है। Rover एक बार पासवर्ड से लॉगिन करके सब सेट कर देता है।",
+  "kb": "home-server",
+  "steps": [
+   {"kind": "ui", "go": "#/hosting", "at": "^#/hosting$", "sel": "a[href='#/hosting/home']", "say": "Click Add a home server.", "done": {"route": "^#/hosting/home"}},
+   {"kind": "ui", "go": "#/hosting/home", "sel": "#hmHost", "say": "Type the machine's address on your network, like 192.168.1.50 (your router's device list shows it) or raspberrypi.local.", "done": {"filled": "#hmHost"}},
+   {"kind": "ui", "go": "#/hosting/home", "sel": "#hmUser", "say": "The login user, for example pi on a Raspberry Pi or your Ubuntu user name.", "optional": true, "done": {"filled": "#hmUser"}},
+   {"kind": "ui", "go": "#/hosting/home", "sel": "#hmPw", "say": "Its password, once. It is only used to install Rover's own key.", "done": {"filled": "#hmPw"}},
+   {"kind": "ui", "go": "#/hosting/home", "sel": "#hmConn", "say": "Click Connect. Rover checks the machine (memory, chip) and picks full or lightweight mode.", "done": {"exists": "#hmGo"}},
+   {"kind": "ui", "go": "#/hosting/home", "sel": "input[name=hmReach][value=tunnel]", "say": "Keep Cloudflare tunnel: it works behind any router with no router changes.", "optional": true, "done": {"click": true}},
+   {"kind": "ui", "go": "#/hosting/home", "sel": "#hmGo", "say": "Click Set up the server and confirm. Setup takes a few minutes.", "done": {"check": "home_server"}}
+  ]},
+ {"id": "guide-setup-server", "group": "Servers", "title": "Set up the hosting engine on a server", "title_hi": "सर्वर पर होस्टिंग इंजन सेट करें",
+  "q": ["install coolify", "set up server", "finish setup", "server not set up", "install hosting engine"],
+  "intro": "Rover installs the free hosting engine (Coolify) on your server and connects to it. You click once; it takes 5-10 minutes.", "kb": "setup-wizard",
+  "steps": [
+   {"kind": "ui", "go": "#/setup", "sel": "#sGo, button.primary", "say": "Check the server details and click the big button to start. Rover shows each step as it goes.", "done": {"check": "engine_ready"}}
+  ]}
+]
