@@ -1,0 +1,153 @@
+name: build
+# Tests every push and pull request. A tag like v0.8.1 (or the "Release"
+# workflow, which needs no git) builds Windows files and publishes a GitHub
+# Release with rover.exe, Rover-Setup-<ver>.exe, the full offline installer
+# (Rover-Offline-Setup-<ver>.exe, with the Jiv brain inside, sliced under
+# 2 GB), offline packs (.dlpack parts) and SHA256SUMS.txt. Rover's
+# self-updater reads exactly these files. dilreet.exe and
+# Dilreet-Setup-<ver>.exe are copies under the old names, so Dilreet 0.6/0.7
+# copies find the update too. See docs/RELEASING.md.
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_call:
+    inputs:
+      version: { type: string, required: false, default: "" }
+      prerelease: { type: boolean, required: false, default: false }
+      notes: { type: string, required: false, default: "" }
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version-file: go.mod }
+      - name: Decode icons
+        shell: bash
+        run: for f in web/icon.png winres/icon.ico winres/icon.png web/fonts/inter-latin-wght-normal.woff2 web/fonts/inter-latin-ext-wght-normal.woff2; do tr -d "\r" < "$f.b64" | base64 -d > "$f"; done
+      - run: gofmt -l . | tee /dev/stderr | (! read)
+      - run: go vet ./... && GOOS=windows go vet ./...
+      - run: go test -race ./...
+      - run: for f in web/*.js; do node --check "$f"; done
+  windows:
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version-file: go.mod }
+      - name: Decode icons
+        shell: bash
+        run: for f in web/icon.png winres/icon.ico winres/icon.png web/fonts/inter-latin-wght-normal.woff2 web/fonts/inter-latin-ext-wght-normal.woff2; do tr -d "\r" < "$f.b64" | base64 -d > "$f"; done
+      - name: Version
+        shell: bash
+        env: { IN_VER: "${{ inputs.version }}" }
+        run: |
+          v="${IN_VER#v}"
+          if [[ -z "$v" ]]; then v="${GITHUB_REF_NAME#v}"; [[ "$GITHUB_REF_TYPE" == tag ]] || v="0.8.0"; fi
+          [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || { echo "Bad version: $v"; exit 1; }
+          echo "VER=$v" >> "$GITHUB_ENV"
+          echo "WINVER=${v%%-*}.0" >> "$GITHUB_ENV"
+      - name: Windows resources (icon, manifest)
+        shell: bash
+        run: go run github.com/tc-hib/go-winres@latest make --in winres/winres.json --product-version "$WINVER" --file-version "$WINVER" --arch amd64
+      - name: Build rover.exe
+        shell: bash
+        env: { GOOS: windows, GOARCH: amd64, CGO_ENABLED: "0", PUBKEY: "${{ vars.UPDATE_PUBLIC_KEY }}" }
+        run: go build -trimpath -ldflags "-s -w -H=windowsgui -X main.Version=$VER -X main.updatePublicKey=$PUBKEY" -o rover.exe .
+      - name: Installer
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\iscc.exe" "/DAppVersion=$env:VER" installer\rover.iss
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rover-${{ env.VER }}
+          path: |
+            rover.exe
+            dist/Rover-Setup-*.exe
+  offline:
+    # The full offline installer and packs. Every download is checked against
+    # tools/mkpack/catalog.json (the same SHA-256 values built into Rover).
+    needs: windows
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version-file: go.mod }
+      - name: Decode icons
+        shell: bash
+        run: for f in web/icon.png winres/icon.ico winres/icon.png web/fonts/inter-latin-wght-normal.woff2 web/fonts/inter-latin-ext-wght-normal.woff2; do tr -d "\r" < "$f.b64" | base64 -d > "$f"; done
+      - uses: actions/download-artifact@v4
+        with: { pattern: "rover-*", merge-multiple: true }
+      - name: Version
+        shell: bash
+        env: { IN_VER: "${{ inputs.version }}" }
+        run: |
+          v="${IN_VER#v}"; [[ -n "$v" ]] || v="${GITHUB_REF_NAME#v}"
+          echo "VER=$v" >> "$GITHUB_ENV"
+      - name: Download and verify the brain (model + llama.cpp)
+        shell: bash
+        run: |
+          go run ./tools/mkpack -cache "$RUNNER_TEMP/brain" -model qwen3-1.7b -runtimes cpu,vulkan -stage installer/offline
+          go run ./tools/mkpack -cache "$RUNNER_TEMP/brain" -offline -model qwen3-1.7b -runtimes cpu,vulkan -out "packs/Rover-Offline-Light-$VER.dlpack"
+          go run ./tools/mkpack -cache "$RUNNER_TEMP/brain" -model qwen3-4b -runtimes cpu,vulkan -out "packs/Rover-Offline-Standard-$VER.dlpack"
+          rm -f "$RUNNER_TEMP"/brain/*.gguf
+      - name: Offline installer (sliced under 2 GB)
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\iscc.exe" "/DAppVersion=$env:VER" "/DOffline=Light" installer\rover.iss
+      - name: Check sizes
+        shell: bash
+        run: |
+          ls -l dist packs
+          for f in dist/Rover-Offline-Setup-* packs/*; do s=$(stat -c %s "$f"); [[ $s -lt 2147483648 ]] || { echo "::error::$f is over 2 GiB"; exit 1; }; done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: offline-${{ env.VER }}
+          compression-level: 0
+          path: |
+            dist/Rover-Offline-Setup-*
+            packs/*
+  publish:
+    needs: [windows, offline]
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # publish the GitHub Release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version-file: go.mod }
+      - uses: actions/download-artifact@v4
+        with: { path: art, merge-multiple: true }
+      - name: Files, old-name copies, checksums (and optional signature)
+        shell: bash
+        env: { UPDATE_SIGNING_KEY: "${{ secrets.UPDATE_SIGNING_KEY }}", IN_VER: "${{ inputs.version }}" }
+        run: |
+          v="${IN_VER#v}"; [[ -n "$v" ]] || v="${GITHUB_REF_NAME#v}"
+          echo "VER=$v" >> "$GITHUB_ENV"
+          mkdir rel && find art -type f -exec cp {} rel/ \;
+          cd rel
+          cp rover.exe dilreet.exe
+          cp "Rover-Setup-$v.exe" "Dilreet-Setup-$v.exe"
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          if [[ -n "$UPDATE_SIGNING_KEY" ]]; then (cd .. && go run ./tools/signsums rel/SHA256SUMS.txt); fi
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VER }}
+          target_commitish: ${{ github.sha }}
+          name: Rover ${{ env.VER }}
+          body: ${{ inputs.notes }}
+          generate_release_notes: true
+          prerelease: ${{ inputs.prerelease || contains(env.VER, '-') }}
+          fail_on_unmatched_files: true
+          files: rel/*
