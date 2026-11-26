@@ -1,0 +1,196 @@
+[
+ {
+  "q": "put bakery on joesbakery.com with https and a backup on my home pc",
+  "site": "",
+  "want": [
+   "host_on_this_pc",
+   "add_backup_server",
+   "set_domain",
+   "dns_records",
+   "wait_dns",
+   "enable_https"
+  ]
+ },
+ {
+  "q": "put my bakery site on joesbakery.com with HTTPS",
+  "site": "",
+  "want": [
+   "set_domain",
+   "dns_records",
+   "wait_dns",
+   "enable_https"
+  ]
+ },
+ {
+  "q": "connect joesbakery.com to bakery",
+  "site": "",
+  "want": [
+   "set_domain",
+   "dns_records",
+   "wait_dns",
+   "enable_https"
+  ]
+ },
+ {
+  "q": "create a project called portfolio and put it on myportfolio.in",
+  "site": "",
+  "want": [
+   "create_project",
+   "set_domain",
+   "dns_records",
+   "wait_dns",
+   "enable_https"
+  ]
+ },
+ {
+  "q": "add a backup server for bakery on Oracle",
+  "site": "",
+  "want": [
+   "add_backup_server"
+  ]
+ },
+ {
+  "q": "keep a backup of shop on this pc",
+  "site": "",
+  "want": [
+   "host_on_this_pc",
+   "add_backup_server"
+  ]
+ },
+ {
+  "q": "free disk space on my server",
+  "site": "",
+  "want": [
+   "disk_usage",
+   "free_disk"
+  ]
+ },
+ {
+  "q": "clean up the Oracle server disk space",
+  "site": "",
+  "want": [
+   "disk_usage",
+   "free_disk"
+  ]
+ },
+ {
+  "q": "restart the stuck services on my server",
+  "site": "",
+  "want": [
+   "check_services",
+   "restart_service"
+  ]
+ },
+ {
+  "q": "restart nginx on Home Pi",
+  "site": "",
+  "want": [
+   "restart_service"
+  ]
+ },
+ {
+  "q": "restart the proxy",
+  "site": "",
+  "want": [
+   "restart_service"
+  ]
+ },
+ {
+  "q": "renew the ssl for shop",
+  "site": "",
+  "want": [
+   "renew_ssl"
+  ]
+ },
+ {
+  "q": "shop certificate expired, fix it",
+  "site": "",
+  "want": [
+   "renew_ssl"
+  ]
+ },
+ {
+  "q": "why did bakery's deploy fail",
+  "site": "",
+  "want": [
+   "why_deploy_failed"
+  ]
+ },
+ {
+  "q": "find why the deploy failed and fix it",
+  "site": "bakery",
+  "want": [
+   "why_deploy_failed"
+  ]
+ },
+ {
+  "q": "move bakery to Oracle",
+  "site": "",
+  "want": [
+   "move_project"
+  ]
+ },
+ {
+  "q": "migrate shop to the oracle server",
+  "site": "",
+  "want": [
+   "move_project"
+  ]
+ },
+ {
+  "q": "fix the too many redirects error on shop",
+  "site": "",
+  "want": [
+   "explain_logs",
+   "fix_web_config"
+  ]
+ },
+ {
+  "q": "fix nginx error on bakery",
+  "site": "",
+  "want": [
+   "explain_logs",
+   "fix_web_config"
+  ]
+ },
+ {
+  "q": "diagnose the dns of shop",
+  "site": "",
+  "want": [
+   "check_dns"
+  ]
+ },
+ {
+  "q": "what is filling the disk on my server",
+  "site": "",
+  "want": [
+   "disk_usage"
+  ]
+ },
+ {
+  "q": "roll back shop and then renew its ssl",
+  "site": "",
+  "want": [
+   "rollback",
+   "renew_ssl"
+  ]
+ },
+ {
+  "q": "publish bakery's files again and restart it",
+  "site": "",
+  "want": [
+   "deploy_folder",
+   "restart_site"
+  ]
+ },
+ {
+  "q": "bakery ko joesbakery.com par daalo aur https lagao",
+  "site": "",
+  "want": [
+   "set_domain",
+   "dns_records",
+   "wait_dns",
+   "enable_https"
+  ]
+ }
+]
