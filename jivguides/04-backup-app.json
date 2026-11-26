@@ -1,0 +1,48 @@
+[
+ {"id": "guide-backup-server", "group": "Backup & this PC", "title": "Add a backup server (failover)", "title_hi": "बैकअप सर्वर जोड़ें (फ़ेलओवर)",
+  "q": ["add a backup server", "failover", "keep site online if server goes down", "second server", "backup server for project"],
+  "intro": "Run the project on a second server. Every deploy goes to both, and Rover switches visitors to the backup if the main server stops answering (with Cloudflare).",
+  "intro_hi": "प्रोजेक्ट को दूसरे सर्वर पर भी चलाएँ; मुख्य सर्वर बंद हो तो Rover विज़िटर्स को बैकअप पर भेज देता है।",
+  "kb": "failover-backup", "needs": "site", "do": "add a backup server for {site}",
+  "steps": [
+   {"kind": "ui", "go": "#/project/{site}/hosting", "sel": "#msAdd", "say": "Click Add a backup server (or + Add another server).", "done": {"exists": "#awGo"}},
+   {"kind": "ui", "go": "#/project/{site}/hosting", "sel": "#awList", "say": "Pick the server: another rented one, a machine at home, or This PC.", "done": {"click": true}},
+   {"kind": "ui", "go": "#/project/{site}/hosting", "sel": "#awGo", "say": "Keep Primary + backup and click Add server, then confirm.", "done": {"check": "has_replica:{site}"}},
+   {"kind": "info", "say": "Done. The table shows each server's version and health. Automatic switching needs the domain on Cloudflare."}
+  ]},
+ {"id": "guide-this-pc", "group": "Backup & this PC", "title": "Host on this PC", "title_hi": "इसी PC पर होस्ट करें",
+  "q": ["host on this pc", "use my laptop as server", "serve website from my computer", "this pc hosting", "host from windows"],
+  "intro": "Rover's built-in web server can serve your sites from this Windows PC, reachable from the internet through a Cloudflare tunnel. Best as a backup.",
+  "intro_hi": "Rover इसी Windows PC से आपकी साइट चला सकता है। बैकअप के लिए सबसे अच्छा।", "kb": "this-pc", "do": "host on this pc",
+  "steps": [
+   {"kind": "ui", "go": "#/thispc", "sel": "#pcOn", "say": "Tick Serve websites from this PC.", "done": {"click": true}},
+   {"kind": "ui", "go": "#/thispc", "sel": "#pcAwake", "say": "Keep the PC awake while it hosts (recommended), and Start with Windows.", "optional": true, "done": {"click": true}},
+   {"kind": "ui", "go": "#/thispc", "sel": "#pcSave", "say": "Click Save and confirm.", "done": {"check": "thispc_on"}},
+   {"kind": "ui", "go": "#/thispc", "sel": "#pcTun", "say": "To be reachable from the internet, click Connect to the internet (needs Cloudflare).", "optional": true, "done": {"click": true}},
+   {"kind": "info", "say": "This PC can now be added to a project as a backup server in the project's Hosting tab."}
+  ]},
+ {"id": "guide-update-app", "group": "App & AI", "title": "Update Rover", "title_hi": "Rover अपडेट करें",
+  "q": ["update rover", "new version of rover", "check for updates", "upgrade app"],
+  "intro": "Rover checks for new versions. Updates are signed and verified before they install; your projects and settings stay.", "kb": "updates",
+  "steps": [
+   {"kind": "ui", "go": "#/settings/updates", "sel": "#uCheck", "say": "Click Check for updates now.", "done": {"check": "update_checked"}},
+   {"kind": "ui", "go": "#/settings/updates", "sel": "#uApply, #uRes", "say": "If a new version is shown, click Install. Rover restarts by itself after a few seconds.", "done": {"click": true}},
+   {"kind": "ui", "go": "#/settings/updates", "sel": "#uAuto", "say": "Tip: tick automatic updates so you never have to do this again.", "optional": true, "done": {"click": true}}
+  ]},
+ {"id": "guide-connect-ai", "group": "App & AI", "title": "Give Jiv an offline brain (AI)", "title_hi": "Jiv को ऑफ़लाइन ब्रेन (AI) दें",
+  "q": ["connect ai", "download offline brain", "make jiv smarter", "install ai model", "use chatgpt in rover", "offline ai"],
+  "intro": "Jiv already works offline with built-in help. The offline brain is a free AI model that runs on this PC so Jiv understands any wording and can plan tasks. Nothing goes to the internet.",
+  "intro_hi": "ऑफ़लाइन ब्रेन एक मुफ़्त AI मॉडल है जो इसी PC पर चलता है। इंटरनेट पर कुछ नहीं जाता।", "kb": "offline-brain",
+  "steps": [
+   {"kind": "ui", "go": "#/settings/jiv", "sel": "#g8Gpu, .brainlist", "say": "Rover checked this PC (memory and graphics card) and marked the best model as Recommended.", "done": {"click": true}, "optional": true},
+   {"kind": "ui", "go": "#/settings/jiv", "sel": "#jDl", "say": "Click Download offline brain. About 1-3 GB, verified, resumable. Or use Import offline pack if you have the file on a USB drive.", "done": {"check": "brain_ready"}},
+   {"kind": "info", "say": "Jiv now answers free-form questions and plans multi-step tasks on this PC. Cloud AI (ChatGPT, Claude...) is optional in Settings > Connect AI."}
+  ]},
+ {"id": "guide-offline-pack", "group": "App & AI", "title": "Import an offline pack (no internet)", "title_hi": "ऑफ़लाइन पैक इम्पोर्ट करें",
+  "q": ["import offline pack", "install brain from usb", "offline pack file", "no internet install model", "dlpack"],
+  "intro": "An offline pack (.dlpack file, from the full installer's download page or another PC) contains the AI engine and model. Importing it needs no internet.", "kb": "offline-pack",
+  "steps": [
+   {"kind": "ui", "go": "#/settings/jiv", "sel": "#g8Pack", "say": "This card lists offline packs Rover found next to the app and on USB drives.", "done": {"click": true}, "optional": true},
+   {"kind": "ui", "go": "#/settings/jiv", "sel": "#g8Imp", "say": "Click Import a pack, choose the .dlpack file (or the first part, .dlpack.001) and confirm.", "done": {"check": "brain_ready"}}
+  ]}
+]
