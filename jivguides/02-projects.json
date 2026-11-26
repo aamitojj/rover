@@ -1,0 +1,41 @@
+[
+ {"id": "guide-add-project", "group": "Projects & deploys", "title": "Add a new project (website)", "title_hi": "नया प्रोजेक्ट (वेबसाइट) जोड़ें",
+  "q": ["add new project", "create a website", "new site", "publish my first site", "add project", "upload my website"],
+  "intro": "Drop your site's folder or .zip and Rover publishes it with an https address straight away. React/Vue projects are built for you.",
+  "intro_hi": "अपनी साइट का फ़ोल्डर या .zip छोड़ें, Rover उसे तुरंत https पते पर प्रकाशित कर देता है।",
+  "kb": "new-project", "do": "create a new project",
+  "steps": [
+   {"kind": "ui", "go": "#/new", "at": "^#/new", "sel": "button[data-t=drop]", "say": "Choose Deploy manually (or Import from Git if your code is on GitHub).", "optional": true, "done": {"click": true}},
+   {"kind": "ui", "go": "#/new", "at": "^#/new$", "sel": "#dz", "say": "Drag your site folder or .zip onto this box, or click browse for a folder. A plain site needs an index.html.", "say_hi": "अपनी साइट का फ़ोल्डर या zip इस बॉक्स पर छोड़ें।", "done": {"route": "^#/(review|project/)"}},
+   {"kind": "ui", "at": "^#/review", "sel": "#pName", "say": "Check the project name. It becomes part of the address.", "optional": true, "done": {"filled": "#pName"}},
+   {"kind": "ui", "at": "^#/review", "sel": "#pGo", "say": "Click Publish. Rover uploads the files and shows the live address.", "done": {"route": "^#/project/"}},
+   {"kind": "info", "say": "Your site is live on its instant https address. Next: add your own domain in the Domain tab."}
+  ]},
+ {"id": "guide-deploy-drop", "group": "Projects & deploys", "title": "Publish a new version by drag and drop", "title_hi": "ड्रैग-एंड-ड्रॉप से नया वर्ज़न प्रकाशित करें",
+  "q": ["deploy new version", "update my site", "publish changes", "upload new files", "drop to deploy", "deploy by drop"],
+  "intro": "Drop the new build on the project. The previous version is kept, so you can roll back in one click.", "kb": "drop-deploy", "needs": "site", "do": "deploy {site}",
+  "steps": [
+   {"kind": "ui", "go": "#/project/{site}/deploys", "sel": "#dDz", "say": "Drag your updated folder or .zip onto this box (or click Browse for a folder).", "say_hi": "अपडेट किया हुआ फ़ोल्डर या zip इस बॉक्स पर छोड़ें।", "done": {"check": "deploy_count:{site}", "changed": true}},
+   {"kind": "ui", "go": "#/project/{site}/deploys", "sel": "#dList", "say": "Your new deploy is at the top of the history. Older ones stay here for one-click roll back.", "done": {"click": true}, "optional": true}
+  ]},
+ {"id": "guide-restore-deploy", "group": "Projects & deploys", "title": "Restore an old version (roll back)", "title_hi": "पुराना वर्ज़न वापस लाएँ (रोलबैक)",
+  "q": ["restore old deploy", "roll back", "go back to previous version", "undo deploy", "restore old version", "rollback"],
+  "intro": "Every deploy is kept. Publishing an older one makes it live again in seconds; the newer one stays in the list.", "kb": "rollback", "needs": "site", "do": "roll back {site}",
+  "steps": [
+   {"kind": "ui", "go": "#/project/{site}/deploys", "sel": "#dList", "say": "This is the deploy history, newest first. Find the version that worked (the notes and dates help).", "done": {"click": true}, "optional": true},
+   {"kind": "ui", "go": "#/project/{site}/deploys", "sel": "#dList button[data-a=publish]", "text": "roll back", "say": "Click Publish (roll back) on that version and confirm.", "done": {"check": "release:{site}", "changed": true}},
+   {"kind": "info", "say": "That version is live again. To undo, publish the newer one the same way."}
+  ]},
+ {"id": "guide-explain-logs", "group": "Projects & deploys", "title": "Read a project's log", "q": ["read logs", "see errors in log", "where are the logs", "visitor log", "error log"],
+  "intro": "The Logs tab shows what the web server and your site printed. Jiv can read it and explain the important lines.", "kb": "logs-tab", "needs": "site", "do": "explain the logs of {site}",
+  "steps": [
+   {"kind": "ui", "go": "#/project/{site}/logs", "sel": "#view .tabs, #lBody", "say": "This is the live log. Errors are highlighted. Tip: ask Jiv 'explain the logs of {siteName}' for a plain-English summary.", "done": {"click": true}}
+  ]},
+ {"id": "guide-password", "group": "Projects & deploys", "title": "Password-protect a site", "q": ["password protect site", "lock my site with password", "private site", "basic auth"],
+  "intro": "Put a simple user name and password in front of the whole site, for staging or client previews.", "kb": "password-protect", "needs": "site",
+  "steps": [
+   {"kind": "ui", "go": "#/project/{site}/config/access", "sel": "#aOn", "say": "Turn on Password protection.", "done": {"click": true}},
+   {"kind": "ui", "go": "#/project/{site}/config/access", "sel": "#aGen", "say": "Click Generate for a strong password (or type your own).", "optional": true, "done": {"click": true}},
+   {"kind": "ui", "go": "#/project/{site}/config/access", "sel": "#aSave", "say": "Click Save. The next visitor is asked for the password.", "done": {"click": true}}
+  ]}
+]
