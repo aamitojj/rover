@@ -1,0 +1,43 @@
+name: Release
+# One click, no git needed: Actions > Release > Run workflow, type the new
+# version (for example 0.8.1) and press the green button. This tests, builds,
+# creates the tag v0.8.1 and publishes the GitHub Release that every
+# Rover copy picks up through "Check for updates".
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "New version, for example 0.8.1 (beta: 0.9.0-beta.1)"
+        required: true
+        type: string
+      prerelease:
+        description: "Beta / pre-release (only offered to users on the Beta channel)"
+        required: false
+        type: boolean
+        default: false
+      notes:
+        description: "What's new (optional; shown to users before they update)"
+        required: false
+        type: string
+        default: ""
+permissions:
+  contents: write
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the version
+        env: { VER: "${{ inputs.version }}", GH_TOKEN: "${{ github.token }}" }
+        run: |
+          v="${VER#v}"
+          [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || { echo "::error::Use a version like 0.6.1 or 0.8.0-beta.1 (got '$VER')"; exit 1; }
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v$v" >/dev/null 2>&1; then echo "::error::v$v already exists. Choose a higher version."; exit 1; fi
+          echo "Releasing v$v"
+  build:
+    needs: check
+    uses: ./.github/workflows/build.yml
+    with:
+      version: ${{ inputs.version }}
+      prerelease: ${{ inputs.prerelease }}
+      notes: ${{ inputs.notes }}
+    secrets: inherit
