@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Rover</title>
+<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/rover.css">
+<link rel="preload" href="/static/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="icon" href="/static/logo.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/static/icon.png">
+<script src="/static/theme.js"></script>
+</head>
+<body>
+<script src="/static/icons.js"></script>
+<a href="#main" class="skip">Skip to content</a>
+<aside aria-label="Rover">
+  <div class="brand"><img class="logo" src="/static/logo.svg" alt="" aria-hidden="true"><span>Rover<small id="ver"></small></span></div>
+  <nav id="nav" aria-label="Main">
+    <a href="#/dashboard" data-route="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg><span>Dashboard</span></a>
+    <a href="#/projects" data-route="projects"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg><span>Projects</span></a>
+    <div id="navGroups" class="navgroups" aria-label="Project groups"></div>
+    <a href="#/deploys" data-route="deploys"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg><span>Deploys</span></a>
+    <a href="#/domains" data-route="domains"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg><span>Domains</span></a>
+    <a href="#/testing" data-route="testing"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 3h6M10 3v6L4 19a2 2 0 002 2h12a2 2 0 002-2l-6-10V3"/></svg><span>App Testing</span></a>
+    <a href="#/jiv" data-route="jiv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a8 8 0 01-11.6 7.1L4 20l1-4.6A8 8 0 1121 12z"/></svg><span>Jiv</span></a>
+    <a href="#/settings" data-route="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg><span>Settings</span></a>
+  </nav>
+  <div class="side-bottom">
+    <a class="conn" id="connState" href="#/settings/server" title="Server connection"><span class="dot" id="connDot"></span><span class="lbl" id="connText">Not connected</span></a>
+    <button id="bell" aria-haspopup="true" aria-expanded="false" title="Notifications">&#128276; <span class="lbl">Notifications</span><span id="unread" class="count hidden"></span></button>
+    <button id="themeBtn" title="Switch light / dark theme">&#9681; <span class="lbl">Theme</span></button>
+  </div>
+</aside>
+<main id="main" tabindex="-1">
+  <div id="banner" class="banner hidden" role="status"></div>
+  <div id="view" class="page"></div>
+<section id="view-testing" class="page wide hidden" aria-labelledby="testingTitle">
+  <div class="head"><h1 id="testingTitle">App Testing</h1><span class="grow"></span><a class="btn ghost sm" href="#/guide#guide-testing">How it works</a></div><div id="tPending" class="alert info hidden"></div>
+  <p class="muted">Test a site on this PC before it goes live. Nothing is uploaded until you click <b>Deploy this version</b>.</p>
+  <div class="card" id="tLoader">
+    <h2>1. Load a version</h2>
+    <div id="tDrop" class="drop compact" tabindex="0" role="button" aria-label="Drop a site folder or zip to test"><div class="big">Drop a folder or .zip here to test it</div><div class="muted small">or choose below</div></div>
+    <div class="grid3" style="margin-top:12px">
+      <label>Zip file <input type="file" id="tZip" accept=".zip"></label>
+      <label>&hellip;or a folder <input type="file" id="tDir" webkitdirectory multiple></label>
+      <label>&hellip;or a path on this PC <input id="tPath" placeholder="C:\Sites\bakery\dist"></label>
+    </div>
+    <button id="tLoad" class="primary">Load &amp; test</button>
+    <button id="tReload" class="hidden" title="Read the folder/zip on this PC again and re-run the checks">Reload from disk &amp; re-test</button>
+    <button id="tStop" class="hidden">Stop test</button>
+    <span id="tLoading" class="muted small hidden">Unpacking and checking&hellip;</span>
+    <div id="tInfo" class="small"></div>
+  </div>
+
+  <div id="tMain" class="hidden">
+    <div class="card">
+      <h2>2. Try it in the built-in browser</h2>
+      <div class="browserbar">
+        <button id="bBack" title="Back">&#9664;</button>
+        <button id="bFwd" title="Forward">&#9654;</button>
+        <button id="bReload" title="Reload">&#10227;</button>
+        <button id="bHome" title="Home page">&#8962;</button>
+        <input id="bAddr" spellcheck="false" title="Address inside the preview (press Enter)">
+        <button id="bGo">Go</button>
+        <button id="bOpen" title="Open in your normal browser">Open in browser &#8599;</button>
+      </div>
+      <div class="browserbar small">
+        <span class="muted">Screen:</span>
+        <button data-vp="375x667">Phone 375</button>
+        <button data-vp="768x1024">Tablet 768</button>
+        <button data-vp="1280x800" class="primary">Desktop 1280</button>
+        <button data-vp="full">Full width</button>
+        <input id="vpW" type="number" min="200" max="3840" class="num" title="width"> &times; <input id="vpH" type="number" min="200" max="3000" class="num" title="height">
+        <button id="vpSet">Set</button>
+        <button id="vpRotate" title="Swap width and height">Rotate</button>
+        <label class="check" style="margin:0"><input type="checkbox" id="vpFit" checked> Shrink to fit</label>
+        <span id="vpLabel" class="muted"></span>
+      </div>
+      <div id="bExternal" class="note hidden small"></div>
+      <div id="frameWrap"><div id="frameBox"><iframe id="pFrame" title="Site preview" sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-downloads allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer"></iframe></div></div>
+      <div class="consolehead">
+        <b>Browser log</b>
+        <label class="check" style="margin:0"><input type="radio" name="logf" value="problems" checked> Problems only</label>
+        <label class="check" style="margin:0"><input type="radio" name="logf" value="all"> All requests</label>
+        <span id="logCounts" class="muted small"></span>
+        <button id="logClear" class="sm ghost">Clear</button>
+      </div>
+      <div id="tLog" class="console"></div>
+    </div>
+
+    <div class="card">
+      <h2>3. Check report <span id="tSummary" class="small"></span></h2>
+      <div class="toolbar">
+        <label class="check" style="margin:0"><input type="checkbox" id="rShowPass"> Show passed checks</label>
+        <a id="rExport" class="btn sm" href="/api/test/report" download>Export report (JSON)</a>
+        <button id="rNginx">Show production server config</button>
+      </div>
+      <div id="tReport"></div>
+      <pre id="tNginx" class="log hidden"></pre>
+    </div>
+
+    <div class="card">
+      <h2>4. Deploy this version</h2>
+      <p class="small muted">Uploads exactly the files you tested (same fingerprint), with the same redirect and header rules, through the normal deployment (a new release you can roll back).</p>
+      <div class="toolbar">
+        <select id="tSite" aria-label="Project to deploy to" style="max-width:360px"></select>
+        <button id="tDeploy" class="primary" disabled>Deploy this version</button>
+        <span id="tDeployNote" class="small muted"></span>
+      </div>
+      <div id="tDeployLog"></div>
+    </div>
+  </div>
+</section>
+
+
+</main>
+<div id="jivDock" class="jivdock">
+  <section id="jiv" class="jiv" aria-label="Jiv, your assistant">
+    <div class="jiv-panel">
+      <div class="jiv-head"><span class="jiv-av" aria-hidden="true">J</span><b>Jiv</b>
+        <select id="cModel" aria-label="AI model"><option value="">Jiv offline (built-in guide)</option></select><span id="cWhere" class="small"></span><span class="grow"></span>
+        <label class="check small" title="Lets Jiv see your projects, domains and server status (never passwords, keys or tokens)"><input type="checkbox" id="cCtx" checked> Include my status</label>
+        <a class="btn ghost sm" href="#/jiv" id="jFull" title="Open the Jiv page" aria-label="Open the Jiv page">&#10530;</a><button id="cClear" class="ghost sm" type="button" title="Clear chat" aria-label="Clear chat">&#128465;</button><button id="jMin" class="ghost sm" type="button" title="Minimize" aria-label="Minimize Jiv">&#8212;</button></div>
+      <div class="msgs" id="msgs" aria-live="polite"></div>
+      <div id="suggest" class="suggest"></div>
+    </div>
+    <form class="composer" id="cForm"><span class="jiv-av" aria-hidden="true">J</span><textarea id="cIn" rows="1" placeholder="Ask Jiv anything&hellip;" aria-label="Ask Jiv anything" aria-expanded="false"></textarea><button id="cSend" class="primary" type="submit">Send</button><button id="cStop" type="button" class="hidden">Stop</button></form>
+  </section>
+</div>
+<div id="noticePanel" class="notices hidden" role="dialog" aria-label="Notifications"></div>
+<div id="toasts" aria-live="polite" aria-atomic="false"></div>
+<div id="modalRoot"></div>
+<template id="tpl-guide"><div class="guide">
+  <div class="card" id="guide-new06">
+    <h2>New in 0.6</h2>
+    <ul>
+      <li><b>Everything for a project in one place.</b> Open a project: <b>Overview</b> (live address, quick actions, a <b>Set up this project</b> checklist), <b>Deploys</b>, <b>Domains</b>, <b>Hosting</b>, <b>Configuration</b> (build settings, redirects &amp; headers, password, notifications, backups, danger zone), Files, Testing and Visitors &amp; logs.</li>
+      <li><b>Drop to deploy, like Netlify.</b> Drag your new build folder or .zip onto the project page, anywhere. It goes live in seconds and shows the address. Only changed files are sent. Save a <b>draft</b> to preview first, <b>lock publishing</b> for automatic deploys, and <b>roll back</b> in one click.</li>
+      <li><b>Even faster:</b> <b>Redeploy last folder</b>, paste a copied folder path with <span class="kbd">Ctrl</span>+<span class="kbd">V</span>, keys <span class="kbd">1</span>&ndash;<span class="kbd">8</span> for tabs, <span class="kbd">D</span> deploy, <span class="kbd">R</span> redeploy, <span class="kbd">O</span> open the site, and <b>Deploy with Rover</b> in the File Explorer right-click menu (installer option).</li>
+      <li><b>Password-protect a site</b> and choose the <b>primary domain</b> (www or not).</li>
+      <li><b>Automatic updates.</b> <a href="#/settings/updates">Settings &rarr; Updates</a> checks GitHub for new versions, shows what's new, and installs after a checksum check (or by itself, if you choose). Stable or beta channel; skip or postpone a version.</li>
+    </ul>
+  </div>
+  <div class="card" id="guide-new05">
+    <h2>New in 0.5</h2>
+    <ul>
+      <li><b>Jiv works offline.</b> Ask anything at the bottom of any page, in English, Hindi or Hinglish. Jiv answers from 60 built-in help articles, checks your sites (<i>&ldquo;why is my site down?&rdquo;</i>) and offers buttons that fix things. Anything that changes your server, DNS or settings waits for your <b>Yes, do it</b> click.</li>
+      <li><b>Offline brain (optional).</b> <a href="#/settings/jiv">Settings &rarr; Jiv</a> downloads a small AI model (1.1&ndash;2.5 GB) that runs on this PC with no internet and no account.</li>
+      <li><b>Hosting accounts.</b> <a href="#/hosting">Connect</a> DigitalOcean (browser sign-in), Hetzner, Vultr, Linode, AWS Lightsail, Oracle, Contabo, Hostinger, Scaleway, UpCloud or any VPS. See your servers, click <b>Use this server for Rover</b>, or create one (the price is shown first). Several accounts and servers are fine; each project remembers its server.</li>
+      <li><b>Faster to use.</b> <span class="kbd">Ctrl</span>+<span class="kbd">K</span> finds any page, project, server or help article. Press <span class="kbd">?</span> for all <a href="#/shortcuts">shortcuts</a>. Archive, pin and bulk changes can be undone from the message that appears. Every page has <b>? Explain this page</b>, and red error boxes have <b>Ask Jiv why</b>.</li>
+    </ul>
+  </div>
+  
+  <div class="card">
+    <h2>How it works</h2>
+    <p>Your websites live on <b>your own rented server (VPS)</b>. On that server, <a href="https://coolify.io" target="_blank" rel="noopener">Coolify</a> (free, open source) runs each site in a small container and gets free HTTPS certificates. Rover is the remote control on your PC: it sets up Coolify, uploads your site files, and connects domains. GitHub is optional (you can import from it, or just drag and drop).</p>
+  </div>
+  <div class="card">
+    <h2>1. Choose a server</h2>
+    <ul>
+      <li><b>Minimum for Coolify:</b> 2 CPU cores, 2 GB RAM, 10 GB disk (from the Coolify docs).</li>
+      <li><b>For about 100 static sites:</b> 4 vCPU, 8 GB RAM, 80+ GB SSD. Each site is one small nginx container (roughly 5&ndash;15 MB RAM each), plus Coolify itself (~1 GB). Example: Hetzner CPX31 / CX42 or a DigitalOcean 8 GB droplet.</li>
+      <li>Operating system: <b>Ubuntu 24.04 LTS</b> (or 22.04 LTS). Use a fresh server with nothing else on it.</li>
+      <li>Pick a data center close to your visitors.</li>
+      <li>Turn on the provider's automatic backups/snapshots.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>2. Firewall</h2>
+    <p>Allow incoming: <b>22</b> (SSH), <b>80</b> and <b>443</b> (websites), <b>8000</b> (Coolify dashboard; you can close it after you give Coolify its own HTTPS domain), and <b>6001</b>, <b>6002</b> (Coolify real-time updates).</p>
+  </div>
+  <div class="card">
+    <h2>3. Domains and DNS</h2>
+    <ul>
+      <li>Each customer buys a domain anywhere (GoDaddy, Namecheap, Porkbun, Hostinger, Squarespace, Cloudflare, ...). Rover detects the registrar and shows exact steps with a button that opens its DNS page; with a GoDaddy or Porkbun API key it creates the record itself, and "Fully automatic" moves DNS to a free Cloudflare account once.</li>
+      <li>In the domain's <b>DNS settings</b> add an <b>A record</b>: Name <code>@</code>, Value = your server IP. For www add a second A record with Name <code>www</code>. Rover shows the exact records.</li>
+      <li>Delete old A/AAAA records for the same name that point somewhere else (for example the registrar's parking page).</li>
+      <li>On Cloudflare: set the records to <b>DNS only</b> (grey cloud) at least until HTTPS works.</li>
+      <li>DNS changes usually take minutes, sometimes a few hours. Rover checks automatically and connects the domain as soon as it points to your server. Coolify then requests a free Let's Encrypt certificate (HTTPS) within about a minute.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h2>4. Deploying a project</h2>
+    <ol>
+      <li>Projects &rarr; <b>Add new project</b>, then drag your site folder or .zip onto the drop area, paste a GitHub/GitLab/Bitbucket/&hellip; link, or import from Netlify.</li>
+      <li>Rover detects the framework. Plain sites (an <code>index.html</code>) are published as they are. React/Vue/Vite/Astro sources can be built for you (one click, needs Node.js) or you can drop the built <code>dist</code>/<code>build</code> folder.</li>
+      <li>You get an instant address right away (<code>https://&lt;site&gt;.&lt;server-ip&gt;.sslip.io</code>); add your own domain whenever you like.</li>
+      <li>Every deploy is saved on this PC in <code>Documents\Rover\Projects\&lt;name&gt;</code>: <code>current</code> holds the latest files (edit them and click <b>Deploy from this folder</b> on the <b>Files</b> tab), <code>deploys</code> holds each deploy as a .zip that you can download, compare or publish again from the <b>Deploys</b> tab.</li>
+    </ol>
+  </div>
+  <div class="card" id="guide-testing">
+    <h2>5. Test before you deploy (App Testing)</h2>
+    <ol>
+      <li>Open <a href="#/testing">App Testing</a> and load the same zip, folder or path you would deploy. Rover unpacks it into a temporary folder on your PC and starts a private preview server (only this PC can open it).</li>
+      <li>Click through the site in the built-in browser. Use the <b>Phone / Tablet / Desktop</b> buttons to see how it looks on other screens. JavaScript errors and files that fail to load appear in the <b>Browser log</b> under the preview.</li>
+      <li>Read the <b>Check report</b>: <span class="pill fail">fail</span> means visitors will see something broken, <span class="pill warn">warn</span> is worth fixing, <span class="pill pass">pass</span> is fine. Each item says what is wrong and how to fix it.</li>
+      <li>Fix problems in your files, then load again (or click <b>Reload from disk &amp; re-test</b> when you used a path on this PC).</li>
+      <li>Choose the project and click <b>Deploy this version</b>. It uploads exactly the tested files.</li>
+    </ol>
+    <p><b>Redirects and headers.</b> Rover understands Netlify's <code>_redirects</code>, <code>_headers</code> and <code>netlify.toml</code> files. The preview applies them, and every deployment turns them into the live web-server config, so the preview and the live site behave the same. Examples for <code>_redirects</code>:</p>
+<pre>
+# Single-page app (React, Vue, ...): every unknown address shows index.html
+/*            /index.html     200
+# Moved page
+/old-page     /new-page       301
+# Keep part of the address
+/blog/:year/* /posts/:year/:splat  301
+</pre>
+    <p>Example <code>_headers</code>:</p>
+<pre>
+/*
+  X-Content-Type-Options: nosniff
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+</pre>
+    <p class="small muted">Good to know: an existing file always wins over a rule unless you add <code>!</code> (e.g. <code>301!</code>). Addresses are case-sensitive online even though Windows ignores case. <code>/about</code> serves <code>about.html</code> automatically. Rover only runs <code>npm install</code> / <code>npm run build</code> when you click <b>Build it for me</b> (it needs Node.js on this PC); otherwise build yourself and drop the output folder (<code>dist</code>, <code>build</code>&hellip;). Netlify Functions and Netlify Forms are not available.</p>
+  </div>
+  <div class="card">
+    <h2>Troubleshooting</h2>
+    <dl>
+      <dt>SSH connection failed</dt><dd>Check the IP, that port 22 is open in the provider firewall, and the password. Some providers disable password login; use a key file instead (OpenSSH format; convert PuTTY .ppk with PuTTYgen &rarr; Conversions &rarr; Export OpenSSH key).</dd>
+      <dt>"Host key changed"</dt><dd>Normal if you reinstalled the server: click <i>Forget host key</i>. Otherwise do not continue.</dd>
+      <dt>Coolify API error 401 / "Invalid token"</dt><dd>If Rover set up the server, run Settings &rarr; Server &rarr; <i>Set up automatically</i> again; it creates a new token. Otherwise create a token in Coolify (Keys &amp; Tokens), and paste it in Settings &rarr; Server &rarr; <i>Use an existing Coolify</i>. Make sure the API is enabled (Settings &rarr; Advanced).</dd>
+      <dt>403 when creating a site</dt><dd>The token needs the <b>deploy</b> permission (or root) because sites mount a folder from the server.</dd>
+      <dt>Cannot reach Coolify</dt><dd>Port 8000 is blocked: open it in the firewall, or tick "Send API calls through the SSH connection".</dd>
+      <dt>Domain shows a certificate warning</dt><dd>Wait 1&ndash;2 minutes after connecting. Check that both A records point to the server and there's no AAAA record pointing elsewhere. In Coolify, check that the proxy (Servers &rarr; localhost &rarr; Proxy) is running.</dd>
+      <dt>404 / old content after deploy</dt><dd>Make sure <code>index.html</code> is in the top folder of your zip. Hard-refresh the browser (Ctrl+F5).</dd>
+      <dt>Redirect rules don't work on a site created with a very early version (0.1)</dt><dd>The first deployment with 0.2 adds the rules folder to the container and restarts it once (about a minute). If the log shows a warning, use <i>Restart container</i>.</dd>
+      <dt>"nginx rejected the generated config"</dt><dd>One of your rules could not be converted. The live site was not changed. App Testing &rarr; Check report &rarr; <i>Redirect and header rules</i> shows which line to fix.</dd>
+      <dt>Site status "exited" or "degraded"</dt><dd>Click <i>Restart container</i>, then look at the deployment log in Coolify.</dd>
+          <dt>Import from GitHub/GitLab fails with "private" or 404</dt><dd>Click <i>Connect account</i> and create a read-only token with the link shown; Rover stores it encrypted on this PC.</dd>
+      <dt>"This project must be built first"</dt><dd>Click <i>Build it for me</i> (needs Node.js LTS from nodejs.org) or build on your PC and drop the output folder.</dd>
+      <dt>Jiv says no AI is connected</dt><dd>Start a local AI app (Ollama, LM Studio, Jan, GPT4All, llama.cpp, LocalAI, vLLM, text-generation-webui) and click <i>Refresh</i>, or connect a provider in Settings &rarr; Connect AI. Offline, Jiv answers questions about Rover from its built-in guide.</dd>
+    </dl>
+  </div>
+</div></template>
+
+
+<script src="/static/app.js"></script>
+<script src="/static/v04.js"></script>
+<script src="/static/v05.js"></script>
+<script src="/static/v06.js"></script>
+<script src="/static/v07.js"></script>
+<script src="/static/v08.js"></script>
+<script src="/static/ui08.js"></script>
+</body>
+</html>
