@@ -1,0 +1,12 @@
+{
+  "build": "b12360",
+  "runtime_base": "https://github.com/ggml-org/llama.cpp/releases/download/b12360/",
+  "models": [
+    {"id": "qwen3-4b", "short": "Standard", "file": "Qwen3-4B-Instruct-2507-Q4_K_M.gguf", "url": "https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q4_K_M.gguf", "sha256": "3605803b982cb64aead44f6c1b2ae36e3acdb41d8e46c8a94c6533bc4c67e597", "size": 2497281120, "license": "Apache-2.0"},
+    {"id": "qwen3-1.7b", "short": "Light", "file": "Qwen3-1.7B-Q4_K_M.gguf", "url": "https://huggingface.co/unsloth/Qwen3-1.7B-GGUF/resolve/main/Qwen3-1.7B-Q4_K_M.gguf", "sha256": "b139949c5bd74937ad8ed8c8cf3d9ffb1e99c866c823204dc42c0d91fa181897", "size": 1107409472, "license": "Apache-2.0"}
+  ],
+  "runtimes": [
+    {"id": "cpu", "file": "llama-b12360-bin-win-cpu-x64.zip", "sha256": "eae1726047e0eaa707b1302929d196c999b96c2f243b21aea6e93bcebacc4e17", "size": 25097627, "license": "MIT"},
+    {"id": "vulkan", "file": "llama-b12360-bin-win-vulkan-x64.zip", "sha256": "42a6f9df608b99c1c83fcaf77284a516e3f167b32a4690f4e4e364c377547055", "size": 38090978, "license": "MIT"}
+  ]
+}
