@@ -1,0 +1,405 @@
+package main
+
+import (
+	"encoding/json"
+	"errors"
+	"log"
+	"os"
+	"path/filepath"
+	"sync"
+)
+
+// Site is one static website managed by Rover. Each site maps to one
+// Coolify project containing one Docker-image application (nginx).
+type Site struct {
+	Slug        string `json:"slug"`
+	Name        string `json:"name"`
+	ProjectUUID string `json:"project_uuid"`
+	AppUUID     string `json:"app_uuid"`
+	Domain      string `json:"domain,omitempty"`
+	IncludeWWW  bool   `json:"include_www,omitempty"`
+	DomainLive  bool   `json:"domain_live,omitempty"`
+	CreatedAt   string `json:"created_at"`
+	LastDeploy  string `json:"last_deploy,omitempty"`
+	Release     string `json:"release,omitempty"`
+	ConfMount   bool   `json:"conf_mount,omitempty"` // nginx rules mount added (v0.2+)
+
+	// v0.3 automation
+	InstantURL  string   `json:"instant_url,omitempty"`  // https://<slug>.<ip>.sslip.io
+	HTTPSActive bool     `json:"https_active,omitempty"` // a valid certificate was seen on the custom domain
+	DNSMode     string   `json:"dns_mode,omitempty"`     // "cloudflare" or "manual"
+	CFZoneID    string   `json:"cf_zone_id,omitempty"`
+	CFRecordIDs []string `json:"cf_record_ids,omitempty"`
+	CFProxy     bool     `json:"cf_proxy,omitempty"` // turn the orange cloud on once HTTPS works
+	Watch       bool     `json:"watch,omitempty"`    // auto-redeploy when WatchPath changes
+	WatchPath   string   `json:"watch_path,omitempty"`
+	LastSource  string   `json:"last_source,omitempty"`  // local folder/zip of the last deploy, if known
+	Folder      string   `json:"folder,omitempty"`       // project folder name under ProjectsDir
+	DNSProvider string   `json:"dns_provider,omitempty"` // registrar API used for the records (godaddy/porkbun)
+	PendingNS   []string `json:"pending_ns,omitempty"`
+
+	Git *SiteGit `json:"git,omitempty"` // set when the site was imported from a repository
+
+	// v0.4 organisation (all optional; old configs load unchanged)
+	Group     string   `json:"group,omitempty"`     // Group.ID
+	Tags      []string `json:"tags,omitempty"`      // free labels, coloured via Config.TagColors
+	Pinned    bool     `json:"pinned,omitempty"`    // shown first and on the dashboard
+	Archived  bool     `json:"archived,omitempty"`  // hidden from the main list; the site keeps running
+	Framework string   `json:"framework,omitempty"` // detected at the last deploy
+	Notes     string   `json:"notes,omitempty"`
+	Template  string   `json:"template,omitempty"` // starter it was created from
+
+	// v0.5: which server profile (Config.Servers) hosts this project.
+	Server string `json:"server,omitempty"`
+
+	// v0.6 project hub (all optional).
+	Locked     bool        `json:"locked,omitempty"`      // automatic deploys are saved as drafts
+	BuildCmd   string      `json:"build_cmd,omitempty"`   // "npm run <script>" for Git projects
+	PublishDir string      `json:"publish_dir,omitempty"` // folder to serve, overrides auto-detect
+	Access     *SiteAccess `json:"access,omitempty"`      // password protection (nginx basic auth)
+	Primary    string      `json:"primary,omitempty"`     // "", "apex" or "www"
+	AlertDown  *bool       `json:"alert_down,omitempty"`  // default on
+	AlertFail  *bool       `json:"alert_fail,omitempty"`  // default on
+	NoBackup   bool        `json:"no_backup,omitempty"`   // leave out of scheduled backups
+
+	// v0.7: the same project on several servers at once.
+	Servers     []string            `json:"servers,omitempty"`      // extra servers (Site.Server stays the main one)
+	HAMode      string              `json:"ha_mode,omitempty"`      // "" one server | "together" (tunnel replicas) | "backup" (Rover switches DNS)
+	Replicas    map[string]*Replica `json:"replicas,omitempty"`     // per-server state, keyed by server id (main server included)
+	Failover    *FailoverSettings   `json:"failover,omitempty"`     // "backup" mode settings and state
+	TunnelID    string              `json:"tunnel_id,omitempty"`    // "together" mode: the project's Cloudflare Tunnel
+	TunnelToken string              `json:"tunnel_token,omitempty"` // protected
+}
+
+// SiteGit links a site to a repository branch for "Pull latest and deploy"
+// and auto-deploy on new commits (polling while Rover runs; no webhooks).
+type SiteGit struct {
+	URL         string `json:"url"`
+	Kind        string `json:"kind"`
+	Display     string `json:"display"`
+	Branch      string `json:"branch"`
+	Subdir      string `json:"subdir,omitempty"`
+	LastSHA     string `json:"last_sha,omitempty"`
+	AutoDeploy  bool   `json:"auto_deploy"`
+	IntervalMin int    `json:"interval_min,omitempty"` // default 5
+	TestFirst   bool   `json:"test_first"`             // run checks; skip deploy on failures
+	Build       bool   `json:"build,omitempty"`        // user consented to npm build for this site
+	LastCheck   string `json:"last_check,omitempty"`
+	LastError   string `json:"last_error,omitempty"`
+}
+
+type Config struct {
+	ServerIP   string `json:"server_ip"`
+	SSHPort    int    `json:"ssh_port"`
+	SSHUser    string `json:"ssh_user"`
+	SSHKeyPath string `json:"ssh_key_path,omitempty"`
+	// HostKey is the server's SSH host key (authorized_keys format), pinned on
+	// first successful connection (trust on first use).
+	HostKey string `json:"host_key,omitempty"`
+
+	CoolifyURL string `json:"coolify_url,omitempty"`
+	// CoolifyToken is encrypted with Windows DPAPI ("dpapi:" prefix) on Windows.
+	CoolifyToken string `json:"coolify_token,omitempty"`
+	APIViaSSH    bool   `json:"api_via_ssh,omitempty"`
+	ServerUUID   string `json:"server_uuid,omitempty"`
+
+	UpdateManifestURL string          `json:"update_manifest_url,omitempty"` // 0.1-0.5 manifest updater; unused since 0.6
+	RecentFolders     []string        `json:"recent_folders,omitempty"`      // v0.6 "Redeploy" picker
+	NoIncremental     bool            `json:"no_incremental,omitempty"`      // v0.6: always upload every file
+	Update            *UpdateSettings `json:"update,omitempty"`              // v0.6 GitHub Releases updater
+
+	// v0.3 automation. Secrets are protected with protectString (DPAPI on Windows).
+	ManagedKey       string `json:"managed_key,omitempty"`      // Rover's own SSH private key (protected)
+	ManagedKeyPub    string `json:"managed_key_pub,omitempty"`  // its public key (authorized_keys format)
+	AdminEmail       string `json:"admin_email,omitempty"`      // Coolify admin login created by Rover
+	AdminPassword    string `json:"admin_password,omitempty"`   // protected
+	CloudflareToken  string `json:"cloudflare_token,omitempty"` // protected, scoped "Edit zone DNS" token
+	AutoSecurityUpd  bool   `json:"auto_security_updates,omitempty"`
+	BackgroundChecks *bool  `json:"background_checks,omitempty"` // nil = on
+	Provider         string `json:"provider,omitempty"`          // "hetzner"/"digitalocean" if Rover created the server
+	ProviderServerID string `json:"provider_server_id,omitempty"`
+
+	// Assistant. API keys are protected with protectString (DPAPI on Windows)
+	// and never returned to the UI in full.
+	AIConns     map[string]*AIConn `json:"ai_conns,omitempty"`
+	AIDefault   string             `json:"ai_default,omitempty"`    // "local:<id>|<model>" or "<provider>|<model>"
+	AINoContext bool               `json:"ai_no_context,omitempty"` // never attach app context to cloud requests
+	Notices     []Notice           `json:"notices,omitempty"`
+
+	// v0.4
+	ConfigVersion int               `json:"config_version,omitempty"`
+	Groups        []*Group          `json:"groups,omitempty"`
+	TagColors     map[string]string `json:"tag_colors,omitempty"`
+	Backup        *BackupSettings   `json:"backup,omitempty"`
+	SSLWarnDays   int               `json:"ssl_warn_days,omitempty"`
+	SetupHidden   bool              `json:"setup_hidden,omitempty"`
+
+	// Optional Git/Netlify accounts for private imports, keyed by host
+	// ("github.com", "gitlab.example.com", "dev.azure.com/org", "netlify").
+	// Tokens are protected with protectString (DPAPI on Windows).
+	GitAccounts map[string]*GitAccount `json:"git_accounts,omitempty"`
+
+	// Projects: local copy of every deploy (Documents\Rover\Projects by default).
+	ProjectsDir string `json:"projects_dir,omitempty"`
+	KeepDeploys int    `json:"keep_deploys,omitempty"` // 0 = keep every deploy archive
+	// Registrar DNS API keys (GoDaddy, Porkbun), protected like the other secrets.
+	Registrars map[string]*RegistrarCred `json:"registrars,omitempty"`
+	// MigratedFrom records the legacy config folder this config was copied from.
+	MigratedFrom string `json:"migrated_from,omitempty"`
+
+	// v0.5: Jiv settings, hosting accounts and several servers. The fields
+	// above (ServerIP, CoolifyToken, ...) always describe the ACTIVE server;
+	// Servers keeps a copy of every server so Rover can switch between them.
+	Jiv             *JivSettings      `json:"jiv,omitempty"`
+	HostingAccounts []*HostingAccount `json:"hosting_accounts,omitempty"`
+	Servers         []*ServerProfile  `json:"servers,omitempty"`
+	ActiveServer    string            `json:"active_server,omitempty"`
+	DOClientID      string            `json:"do_client_id,omitempty"` // DigitalOcean public OAuth client (self-registered)
+
+	// v0.7: Cloudflare account (for tunnels) and hosting on this PC.
+	CFAccountID string        `json:"cf_account_id,omitempty"`
+	ThisPC      *ThisPCConfig `json:"this_pc,omitempty"`
+
+	Sites []*Site `json:"sites"`
+}
+
+// RegistrarCred is a domain registrar API credential. Key and Secret are
+// protected with protectString and never sent back to the UI.
+type RegistrarCred struct {
+	Key    string `json:"key"`
+	Secret string `json:"secret,omitempty"`
+	Hint   string `json:"hint,omitempty"`
+	Mode   string `json:"mode,omitempty"` // godaddy: "pat" (v3) or "key" (v1 sso-key)
+}
+
+// AIConn is a connected cloud AI provider.
+type AIConn struct {
+	Key     string `json:"key,omitempty"`      // protected
+	KeyHint string `json:"key_hint,omitempty"` // e.g. "sk-...9fQ2" for display
+	Model   string `json:"model,omitempty"`
+	BaseURL string `json:"base_url,omitempty"` // custom provider only
+	Name    string `json:"name,omitempty"`     // custom provider display name
+	Consent bool   `json:"consent,omitempty"`  // user accepted the data notice
+}
+
+// Notice is an in-app notification (DNS live, HTTPS ready, update...).
+type Notice struct {
+	ID    string `json:"id"`
+	Time  string `json:"time"`
+	Level string `json:"level"` // info | success | warn
+	Text  string `json:"text"`
+	Site  string `json:"site,omitempty"`
+	Read  bool   `json:"read,omitempty"`
+}
+
+var (
+	cfgMu sync.Mutex
+	cfg   = &Config{SSHPort: 22, SSHUser: "root"}
+)
+
+func configDir() (string, error) {
+	if d := envOr("CONFIG_DIR"); d != "" {
+		return d, nil
+	}
+	if k := legacyKept("config"); k != "" {
+		return k, nil
+	}
+	base, err := os.UserConfigDir() // %APPDATA% on Windows
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(base, "Rover"), nil
+}
+
+// legacyConfigDir is where versions before the rename kept their settings.
+func legacyConfigDir() string {
+	if envOr("CONFIG_DIR") != "" {
+		return ""
+	}
+	base, err := os.UserConfigDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(base, "HostPanel")
+}
+
+func configPath() (string, error) {
+	d, err := configDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(d, "config.json"), nil
+}
+
+func loadConfig() error {
+	p, err := configPath()
+	if err != nil {
+		return err
+	}
+	if old := legacyConfigDir(); old != "" {
+		if moved, err := migrateConfigDir(old, filepath.Dir(p)); err != nil {
+			log.Printf("could not copy settings from %s: %v", old, err)
+		} else if moved {
+			log.Printf("copied settings from %s to %s", old, filepath.Dir(p))
+		}
+	}
+	b, err := os.ReadFile(p)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	b, moved := rewriteMovedPaths(b)
+	c := &Config{}
+	if err := json.Unmarshal(b, c); err != nil {
+		return err
+	}
+	if c.SSHPort == 0 {
+		c.SSHPort = 22
+	}
+	migrated := migrateConfig(c) || moved
+	if k := legacyKept("docs"); k != "" && c.ProjectsDir == "" {
+		c.ProjectsDir = filepath.Join(k, "Projects") // could not be moved: keep using it
+		migrated = true
+	}
+	cfgMu.Lock()
+	cfg = c
+	if migrated {
+		if err := saveConfigLocked(); err != nil {
+			log.Printf("could not save upgraded settings: %v", err)
+		}
+	}
+	cfgMu.Unlock()
+	return nil
+}
+
+// saveConfigLocked writes the config atomically. Caller must hold cfgMu.
+func saveConfigLocked() error {
+	p, err := configPath()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
+		return err
+	}
+	syncActiveServer(cfg)
+	b, err := json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		return err
+	}
+	tmp := p + ".tmp"
+	if err := os.WriteFile(tmp, b, 0o600); err != nil {
+		return err
+	}
+	return os.Rename(tmp, p)
+}
+
+func withConfig(fn func(c *Config) error) error {
+	cfgMu.Lock()
+	defer cfgMu.Unlock()
+	if err := fn(cfg); err != nil {
+		return err
+	}
+	return saveConfigLocked()
+}
+
+func snapshotConfig() Config {
+	cfgMu.Lock()
+	defer cfgMu.Unlock()
+	c := *cfg
+	c.Sites = make([]*Site, len(cfg.Sites))
+	for i, s := range cfg.Sites {
+		cp := *s
+		if s.Git != nil {
+			g := *s.Git
+			cp.Git = &g
+		}
+		cp.CFRecordIDs = append([]string(nil), s.CFRecordIDs...)
+		cp.Tags = append([]string(nil), s.Tags...)
+		c.Sites[i] = &cp
+	}
+	// Maps and slices are copied too, so readers never race with withConfig.
+	c.AIConns = make(map[string]*AIConn, len(cfg.AIConns))
+	for k, v := range cfg.AIConns {
+		cp := *v
+		c.AIConns[k] = &cp
+	}
+	c.Registrars = make(map[string]*RegistrarCred, len(cfg.Registrars))
+	for k, v := range cfg.Registrars {
+		cp := *v
+		c.Registrars[k] = &cp
+	}
+	c.GitAccounts = make(map[string]*GitAccount, len(cfg.GitAccounts))
+	for k, v := range cfg.GitAccounts {
+		cp := *v
+		c.GitAccounts[k] = &cp
+	}
+	c.Notices = append([]Notice(nil), cfg.Notices...)
+	c.Groups = make([]*Group, len(cfg.Groups))
+	for i, g := range cfg.Groups {
+		cp := *g
+		c.Groups[i] = &cp
+	}
+	c.TagColors = make(map[string]string, len(cfg.TagColors))
+	for k, v := range cfg.TagColors {
+		c.TagColors[k] = v
+	}
+	if cfg.Backup != nil {
+		b := *cfg.Backup
+		c.Backup = &b
+	}
+	if cfg.Jiv != nil {
+		jv := *cfg.Jiv
+		c.Jiv = &jv
+	}
+	c.HostingAccounts = make([]*HostingAccount, len(cfg.HostingAccounts))
+	for i, a := range cfg.HostingAccounts {
+		cp := *a
+		cp.Servers = append([]HostedServer(nil), a.Servers...)
+		c.HostingAccounts[i] = &cp
+	}
+	c.Servers = make([]*ServerProfile, len(cfg.Servers))
+	for i, p := range cfg.Servers {
+		cp := *p
+		c.Servers[i] = &cp
+	}
+	return c
+}
+
+func findSite(c *Config, slug string) *Site {
+	for _, s := range c.Sites {
+		if s.Slug == slug {
+			return s
+		}
+	}
+	return nil
+}
+
+func getToken() string {
+	cfgMu.Lock()
+	enc := cfg.CoolifyToken
+	cfgMu.Unlock()
+	if enc == "" {
+		return ""
+	}
+	t, err := unprotectString(enc)
+	if err != nil {
+		return ""
+	}
+	return t
+}
+
+// secret returns a decrypted protected config field ("" if unset or unreadable).
+func secret(enc string) string {
+	if enc == "" {
+		return ""
+	}
+	t, err := unprotectString(enc)
+	if err != nil {
+		return ""
+	}
+	return t
+}
+
+func backgroundEnabled(c *Config) bool { return c.BackgroundChecks == nil || *c.BackgroundChecks }
