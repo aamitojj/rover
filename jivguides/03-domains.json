@@ -1,0 +1,363 @@
+[
+ {
+  "id": "guide-domain",
+  "group": "Domains & HTTPS",
+  "title": "Connect your own domain",
+  "title_hi": "अपना डोमेन जोड़ें",
+  "q": [
+   "add a domain",
+   "connect my domain",
+   "use my own domain",
+   "custom domain",
+   "point domain to site",
+   "add domain to project"
+  ],
+  "intro": "Type the domain in the project's Domain tab. Rover detects where it is registered (GoDaddy, Namecheap, Hostinger, Porkbun, BigRock, Cloudflare...) and shows the exact records with copy buttons, then turns on HTTPS by itself.",
+  "intro_hi": "प्रोजेक्ट के Domain टैब में डोमेन लिखें। Rover रजिस्ट्रार पहचानकर सही रिकॉर्ड दिखाता है और HTTPS खुद चालू करता है।",
+  "kb": "add-domain",
+  "needs": "site",
+  "do": "put {site} on {domain} with https",
+  "steps": [
+   {
+    "kind": "ui",
+    "go": "#/project/{site}/domain",
+    "sel": "#dDom",
+    "say": "Type your domain, for example joesbakery.com (without www).",
+    "say_hi": "अपना डोमेन लिखें, जैसे joesbakery.com",
+    "skip_if": "domain_set:{site}",
+    "done": {
+     "filled": "#dDom"
+    }
+   },
+   {
+    "kind": "ui",
+    "go": "#/project/{site}/domain",
+    "sel": "#dNext",
+    "say": "Click Continue. Rover finds out where the domain is registered and shows the steps for that company.",
+    "skip_if": "domain_set:{site}",
+    "done": {
+     "exists": "#dStep2 .card"
+    }
+   },
+   {
+    "kind": "ui",
+    "go": "#/project/{site}/domain",
+    "sel": "#dStep2 .card",
+    "say": "Follow the steps shown here at your domain company (or connect its API key and Rover adds the records itself). Come back when you have saved them.",
+    "skip_if": "domain_set:{site}",
+    "done": {
+     "check": "dns_points:{site}"
+    }
+   },
+   {
+    "kind": "ui",
+    "go": "#/project/{site}/domain",
+    "sel": "#dStep3 .card, #dChecks",
+    "say": "Rover is checking DNS every 10 seconds and connects the domain as soon as it points here. Usually 1-30 minutes.",
+    "done": {
+     "check": "domain_live:{site}"
+    }
+   },
+   {
+    "kind": "info",
+    "say": "Connected! HTTPS certificates arrive within 1-2 minutes. Open https://{domain} to check the padlock."
+   }
+  ]
+ },
+ {
+  "id": "guide-domain-godaddy",
+  "group": "Domains & HTTPS",
+  "title": "Connect a GoDaddy domain",
+  "title_hi": "GoDaddy डोमेन जोड़ें",
+  "q": [
+   "connect godaddy domain",
+   "godaddy dns",
+   "point godaddy domain",
+   "godaddy a record",
+   "add domain godaddy"
+  ],
+  "intro": "You add two DNS records at GoDaddy (Rover shows the exact values with copy buttons), then Rover checks and turns on HTTPS by itself.",
+  "intro_hi": "GoDaddy में दो DNS रिकॉर्ड जोड़ें (Rover सही वैल्यू दिखाता है), फिर Rover खुद HTTPS चालू करता है।",
+  "kb": "godaddy",
+  "needs": "site",
+  "do": "put {site} on {domain} with https",
+  "steps": [
+   {
+    "kind": "ui",
+    "go": "#/project/{site}/domain",
+    "sel": "#dDom",
+    "say": "Type your domain, for example joesbakery.com (without www).",
+    "say_hi": "अपना डोमेन लिखें, जैसे joesbakery.com",
+    "skip_if": "domain_set:{site}",
+    "done": {
+     "filled": "#dDom"
+    }
+   },
+   {
+    "kind": "ui",
+    "go": "#/project/{site}/domain",
+    "sel": "#dNext",
+    "say": "Click Continue. Rover detects that the domain is at GoDaddy.",
+    "skip_if": "domain_set:{site}",
+    "done": {
+     "exists": "#dStep2 .card"
+    }
+   },
+   {
+    "kind": "external",
+    "site": "GoDaddy",
+    "url": "https://dcc.godaddy.com/control/portfolio",
+    "image": "godaddy-dns.svg",
+    "say": "Add the records at GoDaddy. Come back to Rover when you have saved them; Rover checks automatically.",
+    "say_hi": "GoDaddy में रिकॉर्ड जोड़ें और वापस आएँ; Rover अपने-आप जाँच करेगा।",
+    "items": [
+     {
+      "text": "Sign in to GoDaddy > My Products > Domains, click your domain, then DNS (DNS Records)."
+     },
+     {
+      "text": "Find the A record with Name @ (often 'Parked'). Click the pencil to edit it, or Add New Record > A."
+     },
+     {
+      "text": "Name:",
+      "copy": "@",
+      "label": "Copy"
+     },
+     {
+      "text": "Value (points to):",
+      "copy": "{ip}",
+      "label": "Copy IP"
+     },
+     {
+      "text": "TTL: 600 seconds (or 1/2 hour). Save."
+     },
+     {
+      "text": "For www: edit the CNAME www (or add one) to point to:",
+      "copy": "@",
+      "label": "Copy"
+     },
+     {
+      "text": "Delete any other A or AAAA records for @ or www that point elsewhere (Website Builder, Parked)."
+     }
+    ],
+    "verify": "dns_points:{site}"
+   },
+   {
+    "kind": "ui",
+    "go": "#/project/{site}/domain",
+    "sel": "#dStep3 .card, #dChecks",
+    "say": "Rover is checking DNS every 10 seconds and connects the domain as soon as it points here. Usually 1-30 minutes.",
+    "done": {
+     "check": "domain_live:{site}"
+    }
+   },
+   {
+    "kind": "info",
+    "say": "Connected! HTTPS certificates arrive within 1-2 minutes. Open https://{domain} to check the padlock."
+   }
+  ]
+ },
+ {
+  "id": "guide-domain-cloudflare",
+  "group": "Domains & HTTPS",
+  "title": "Connect a domain automatically with Cloudflare",
+  "title_hi": "Cloudflare से डोमेन अपने-आप जोड़ें",
+  "q": [
+   "connect cloudflare",
+   "cloudflare api token",
+   "cloudflare dns automatic",
+   "add domain cloudflare",
+   "domain on cloudflare"
+  ],
+  "intro": "If your domain uses Cloudflare (free), connect it once with a token and Rover creates DNS records for every project by itself.",
+  "intro_hi": "डोमेन Cloudflare पर है तो एक बार टोकन जोड़ें; फिर Rover हर प्रोजेक्ट के DNS रिकॉर्ड खुद बनाएगा।",
+  "kb": "cloudflare",
+  "needs": "site",
+  "do": "put {site} on {domain} with https",
+  "steps": [
+   {
+    "kind": "external",
+    "site": "Cloudflare dashboard",
+    "url": "https://dash.cloudflare.com/profile/api-tokens",
+    "image": "cloudflare-token.svg",
+    "skip_if": "cf_connected",
+    "say": "Create an API token in Cloudflare and copy it.",
+    "items": [
+     {
+      "text": "Sign in to Cloudflare > My Profile > API Tokens > Create Token."
+     },
+     {
+      "text": "Use the template Edit zone DNS."
+     },
+     {
+      "text": "Zone Resources: Include > All zones (or just your domain)."
+     },
+     {
+      "text": "For backups on your own servers also add: Account > Cloudflare Tunnel > Edit (optional)."
+     },
+     {
+      "text": "Continue to summary > Create Token, then copy it."
+     }
+    ],
+    "verify": ""
+   },
+   {
+    "kind": "ui",
+    "go": "#/domains",
+    "sel": "#cfT",
+    "skip_if": "cf_connected",
+    "say": "Paste the token here. It is stored encrypted on this PC.",
+    "done": {
+     "filled": "#cfT"
+    }
+   },
+   {
+    "kind": "ui",
+    "go": "#/domains",
+    "sel": "#cfS",
+    "skip_if": "cf_connected",
+    "say": "Click Connect.",
+    "done": {
+     "check": "cf_connected"
+    }
+   },
+   {
+    "kind": "ui",
+    "go": "#/project/{site}/domain",
+    "sel": "#dDom",
+    "skip_if": "domain_set:{site}",
+    "say": "Type the domain for {siteName}.",
+    "done": {
+     "filled": "#dDom"
+    }
+   },
+   {
+    "kind": "ui",
+    "go": "#/project/{site}/domain",
+    "sel": "#dNext",
+    "skip_if": "domain_set:{site}",
+    "say": "Click Continue.",
+    "done": {
+     "exists": "#cfGo"
+    }
+   },
+   {
+    "kind": "ui",
+    "go": "#/project/{site}/domain",
+    "sel": "#cfGo",
+    "say": "Click Set up DNS automatically.",
+    "done": {
+     "check": "dns_points:{site}"
+    }
+   },
+   {
+    "kind": "info",
+    "say": "Done. Rover connects the domain and HTTPS turns on within a couple of minutes."
+   }
+  ]
+ },
+ {
+  "id": "guide-cloudflare-nameservers",
+  "group": "Domains & HTTPS",
+  "title": "Move a domain's DNS to Cloudflare (free)",
+  "q": [
+   "move dns to cloudflare",
+   "change nameservers to cloudflare",
+   "cloudflare nameservers",
+   "add site to cloudflare"
+  ],
+  "intro": "Moving DNS to Cloudflare once makes every future change automatic. The domain stays registered where it is.",
+  "kb": "cloudflare",
+  "steps": [
+   {
+    "kind": "external",
+    "site": "Cloudflare dashboard",
+    "url": "https://dash.cloudflare.com/",
+    "image": "cloudflare-nameservers.svg",
+    "say": "Add the domain to Cloudflare and note its two nameservers.",
+    "items": [
+     {
+      "text": "Cloudflare > Add a domain > type your domain > Free plan."
+     },
+     {
+      "text": "Cloudflare copies your current records; check that nothing important is missing (email MX records!)."
+     },
+     {
+      "text": "Cloudflare shows two nameservers, like ada.ns.cloudflare.com. Keep the page open."
+     }
+    ]
+   },
+   {
+    "kind": "external",
+    "site": "Your registrar (GoDaddy, Namecheap, ...)",
+    "url": "",
+    "image": "",
+    "say": "Replace the nameservers at your registrar.",
+    "items": [
+     {
+      "text": "GoDaddy: Domain > DNS > Nameservers > Change > Enter my own nameservers."
+     },
+     {
+      "text": "Namecheap: Domain List > Manage > Nameservers > Custom DNS."
+     },
+     {
+      "text": "Paste Cloudflare's two nameservers and save. It can take up to 24 hours (usually under 1 hour)."
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "guide-https",
+  "group": "Domains & HTTPS",
+  "title": "Turn on HTTPS (the padlock)",
+  "title_hi": "HTTPS (ताला) चालू करें",
+  "q": [
+   "turn on https",
+   "enable ssl",
+   "get padlock",
+   "https not working",
+   "ssl certificate",
+   "secure my site"
+  ],
+  "intro": "HTTPS is automatic: as soon as your domain points to the server, Rover connects it and a free Let's Encrypt certificate is issued. This guide checks each part.",
+  "intro_hi": "डोमेन सर्वर की ओर इशारा करते ही HTTPS अपने-आप चालू हो जाता है।",
+  "kb": "https-ssl",
+  "needs": "site",
+  "do": "turn on https for {site}",
+  "steps": [
+   {
+    "kind": "ui",
+    "go": "#/project/{site}/domain",
+    "sel": "#dDom",
+    "skip_if": "domain_set:{site}",
+    "say": "First add your domain here.",
+    "done": {
+     "check": "domain_set:{site}"
+    }
+   },
+   {
+    "kind": "ui",
+    "go": "#/project/{site}/domain",
+    "sel": "#dChecks, #dStep3 .card",
+    "skip_if": "domain_live:{site}",
+    "say": "Rover waits until DNS points to your server, then connects the domain.",
+    "done": {
+     "check": "domain_live:{site}"
+    }
+   },
+   {
+    "kind": "ui",
+    "go": "#/project/{site}/domain",
+    "sel": "#dCheck",
+    "say": "Click Check now. When it says connected, the certificate follows within 1-2 minutes.",
+    "done": {
+     "check": "https_ok:{site}"
+    }
+   },
+   {
+    "kind": "info",
+    "say": "HTTPS works. If a browser still warns, wait two minutes and reload; old warnings are cached."
+   }
+  ]
+ }
+]
