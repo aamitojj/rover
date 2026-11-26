@@ -1,0 +1,422 @@
+[
+ {
+  "q": "show me how to add a godaddy domain",
+  "want": "guide-domain-godaddy"
+ },
+ {
+  "q": "walk me through connecting cloudflare",
+  "want": "guide-domain-cloudflare|cloudflare"
+ },
+ {
+  "q": "guide me to add an oracle cloud server",
+  "want": "guide-add-server-oracle|provider-oracle"
+ },
+ {
+  "q": "show me how to add a hetzner server",
+  "want": "guide-add-server-hetzner|provider-hetzner"
+ },
+ {
+  "q": "how do i use my raspberry pi as a server",
+  "want": "guide-add-server-home|home-server"
+ },
+ {
+  "q": "show me how to create a new project",
+  "want": "guide-add-project|new-project"
+ },
+ {
+  "q": "how do i publish a new version by dragging files",
+  "want": "guide-deploy-drop|drop-deploy"
+ },
+ {
+  "q": "show me how to restore an old deploy",
+  "want": "guide-restore-deploy|rollback"
+ },
+ {
+  "q": "how do i turn on https",
+  "want": "guide-https|https-ssl"
+ },
+ {
+  "q": "walk me through adding a backup server",
+  "want": "guide-backup-server|failover-backup"
+ },
+ {
+  "q": "show me how to host on this pc",
+  "want": "guide-this-pc|this-pc"
+ },
+ {
+  "q": "how do i update rover",
+  "want": "guide-update-app|updates"
+ },
+ {
+  "q": "show me how to connect an ai",
+  "want": "guide-connect-ai|screen-connect-ai|offline-brain"
+ },
+ {
+  "q": "how do i install the offline pack",
+  "want": "guide-offline-pack|offline-pack"
+ },
+ {
+  "q": "show me how to password protect a site",
+  "want": "guide-password|password-protect"
+ },
+ {
+  "q": "how do i point my domain to cloudflare nameservers",
+  "want": "guide-cloudflare-nameservers|basics-nameservers|cloudflare"
+ },
+ {
+  "q": "show me how to set up my server",
+  "want": "guide-setup-server|setup-wizard"
+ },
+ {
+  "q": "err too many redirects on my site",
+  "want": "error-redirect-loop"
+ },
+ {
+  "q": "502 bad gateway",
+  "want": "error-502"
+ },
+ {
+  "q": "page not found after refresh in react",
+  "want": "error-404-page"
+ },
+ {
+  "q": "403 forbidden on my website",
+  "want": "error-403"
+ },
+ {
+  "q": "site says not fully secure mixed content",
+  "want": "error-mixed-content"
+ },
+ {
+  "q": "your connection is not private",
+  "want": "error-cert-expired"
+ },
+ {
+  "q": "works on wifi but phone shows parked page",
+  "want": "error-aaaa-record"
+ },
+ {
+  "q": "cloudflare error 522",
+  "want": "error-cloudflare-526"
+ },
+ {
+  "q": "cloudflare token not working zone not found",
+  "want": "error-cf-token"
+ },
+ {
+  "q": "address already in use port 8080",
+  "want": "error-port-in-use"
+ },
+ {
+  "q": "cloudflared tunnel disconnected",
+  "want": "error-tunnel-down"
+ },
+ {
+  "q": "sudo a password is required",
+  "want": "error-sudo"
+ },
+ {
+  "q": "coolify is not responding",
+  "want": "error-coolify-down"
+ },
+ {
+  "q": "server out of memory crash",
+  "want": "error-oom"
+ },
+ {
+  "q": "llama server exited brain failed to start",
+  "want": "error-brain-start"
+ },
+ {
+  "q": "brain download keeps failing",
+  "want": "error-brain-download"
+ },
+ {
+  "q": "offline pack checksum mismatch",
+  "want": "error-pack-checksum"
+ },
+ {
+  "q": "zip file is not valid",
+  "want": "error-zip-invalid"
+ },
+ {
+  "q": "oracle security list ingress port 80",
+  "want": "error-oracle-ports|guide-add-server-oracle"
+ },
+ {
+  "q": "windows firewall popup for rover",
+  "want": "error-windows-firewall"
+ },
+ {
+  "q": "windows protected your pc warning",
+  "want": "error-smartscreen"
+ },
+ {
+  "q": "no index.html found",
+  "want": "error-index-missing"
+ },
+ {
+  "q": "npm is not recognized",
+  "want": "error-node-missing"
+ },
+ {
+  "q": "context deadline exceeded",
+  "want": "error-timeout"
+ },
+ {
+  "q": "repository not found git",
+  "want": "error-git-private"
+ },
+ {
+  "q": "ssh connection refused",
+  "want": "ssh-failed"
+ },
+ {
+  "q": "host key mismatch",
+  "want": "host-key"
+ },
+ {
+  "q": "what is web hosting",
+  "want": "basics-hosting"
+ },
+ {
+  "q": "difference between domain and hosting",
+  "want": "basics-domain-vs-hosting"
+ },
+ {
+  "q": "what is a cname record",
+  "want": "basics-dns-records"
+ },
+ {
+  "q": "how long does dns propagation take",
+  "want": "basics-propagation|dns-waiting"
+ },
+ {
+  "q": "what are nameservers",
+  "want": "basics-nameservers"
+ },
+ {
+  "q": "what is an ssl certificate",
+  "want": "basics-https|https-ssl"
+ },
+ {
+  "q": "what is ssh",
+  "want": "basics-ssh"
+ },
+ {
+  "q": "how to check disk space in linux",
+  "want": "basics-linux"
+ },
+ {
+  "q": "which ports need to be open",
+  "want": "basics-ports|firewall-ports"
+ },
+ {
+  "q": "can rover host wordpress",
+  "want": "basics-static"
+ },
+ {
+  "q": "how much ram does my vps need",
+  "want": "basics-vps-size"
+ },
+ {
+  "q": "what is cgnat",
+  "want": "basics-ip|cloudflare-tunnel"
+ },
+ {
+  "q": "what is the orange cloud in cloudflare",
+  "want": "basics-cdn"
+ },
+ {
+  "q": "should i use www",
+  "want": "basics-www"
+ },
+ {
+  "q": "can i get email on my domain",
+  "want": "basics-email|email-dns"
+ },
+ {
+  "q": "oracle always free vps",
+  "want": "provider-oracle|guide-add-server-oracle"
+ },
+ {
+  "q": "hetzner api token",
+  "want": "provider-hetzner|guide-add-server-hetzner"
+ },
+ {
+  "q": "digitalocean token",
+  "want": "provider-digitalocean"
+ },
+ {
+  "q": "vultr api key",
+  "want": "provider-vultr-linode"
+ },
+ {
+  "q": "aws lightsail security group",
+  "want": "provider-aws"
+ },
+ {
+  "q": "namecheap advanced dns",
+  "want": "registrar-namecheap"
+ },
+ {
+  "q": "hostinger dns zone",
+  "want": "registrar-hostinger"
+ },
+ {
+  "q": "bigrock dns management",
+  "want": "registrar-bigrock"
+ },
+ {
+  "q": "porkbun api key",
+  "want": "registrar-porkbun"
+ },
+ {
+  "q": "what is on the overview tab",
+  "want": "screen-overview"
+ },
+ {
+  "q": "what do the deploy statuses mean",
+  "want": "screen-deploys"
+ },
+ {
+  "q": "hosting accounts page",
+  "want": "screen-hosting"
+ },
+ {
+  "q": "keep pc awake while hosting",
+  "want": "screen-thispc|this-pc"
+ },
+ {
+  "q": "change jiv language",
+  "want": "screen-jiv-settings"
+ },
+ {
+  "q": "use my nvidia graphics card for jiv",
+  "want": "gpu-brain"
+ },
+ {
+  "q": "will the brain slow down my laptop",
+  "want": "faq-gpu-laptop"
+ },
+ {
+  "q": "can jiv do it for me",
+  "want": "do-it-for-me|jiv-about"
+ },
+ {
+  "q": "is it safe to let jiv change my server",
+  "want": "plan-safety"
+ },
+ {
+  "q": "free disk space on my server",
+  "want": "jiv-free-disk"
+ },
+ {
+  "q": "restart stuck services",
+  "want": "jiv-restart-services"
+ },
+ {
+  "q": "renew ssl certificate",
+  "want": "jiv-renew-ssl"
+ },
+ {
+  "q": "why did my deploy fail",
+  "want": "jiv-deploy-failed"
+ },
+ {
+  "q": "move my project to another server",
+  "want": "jiv-move-project"
+ },
+ {
+  "q": "explain my logs",
+  "want": "jiv-explain-logs|logs-tab"
+ },
+ {
+  "q": "diagnose my dns",
+  "want": "jiv-dns-diagnose"
+ },
+ {
+  "q": "list of walkthroughs",
+  "want": "guides-library|screen-guides"
+ },
+ {
+  "q": "how much does rover cost",
+  "want": "faq-cost"
+ },
+ {
+  "q": "does rover work without internet",
+  "want": "faq-internet"
+ },
+ {
+  "q": "how many websites can i host",
+  "want": "faq-many-sites"
+ },
+ {
+  "q": "uninstall rover will my sites stop",
+  "want": "faq-uninstall"
+ },
+ {
+  "q": "where are my passwords stored",
+  "want": "faq-security|privacy-security"
+ },
+ {
+  "q": "restore from backup",
+  "want": "faq-restore-backup|backups-alerts"
+ },
+ {
+  "q": "make my website faster",
+  "want": "faq-speed"
+ },
+ {
+  "q": "show my site on google",
+  "want": "faq-seo"
+ },
+ {
+  "q": "rover for mac",
+  "want": "faq-mac-linux"
+ },
+ {
+  "q": "share with my team",
+  "want": "faq-team"
+ },
+ {
+  "q": "domain kaise jode",
+  "want": "add-domain|guide-domain-godaddy"
+ },
+ {
+  "q": "site band hai kya karu",
+  "want": "site-down"
+ },
+ {
+  "q": "server ki disk khali karo",
+  "want": "jiv-free-disk"
+ },
+ {
+  "q": "mere liye kar do",
+  "want": "do-it-for-me"
+ },
+ {
+  "q": "hosting kya hai",
+  "want": "basics-hosting"
+ },
+ {
+  "q": "मुझे दिखाओ",
+  "want": "guide-mode"
+ },
+ {
+  "q": "oracle free server kaise banaye",
+  "want": "provider-oracle|guide-add-server-oracle"
+ },
+ {
+  "q": "bina internet ke brain kaise daale",
+  "want": "offline-pack"
+ },
+ {
+  "q": "what happened to dilreet",
+  "want": "faq-renamed-rover"
+ },
+ {
+  "q": "where did my dilreet folder go",
+  "want": "faq-renamed-rover"
+ }
+]
