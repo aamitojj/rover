@@ -1,4 +1,4 @@
-# Rover v0.8
+# Rover v0.9
 
 <img src="web/icon.png" width="64" align="right" alt="">
 
@@ -7,6 +7,15 @@ Drop a folder, paste a GitHub link or import from Netlify, and your site is onli
 with HTTPS in a minute. Under the hood it sets up and drives
 [Coolify](https://coolify.io) on a VPS for you. You don't need Docker, the
 command line or GitHub.
+
+**New in 0.9** (see [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) and [docs/RESEARCH.md](docs/RESEARCH.md#rover-09--research-notes))
+
+* **Integration Centre.** Connect, test, edit and disconnect accounts for Coolify, nginx direct, This PC, Supabase, Firebase, Netlify, Vercel, Oracle Cloud, AWS, Google Cloud, Azure, Cloudflare, GitHub, GitLab, Google Analytics, Search Console and AdSense. Several accounts per provider. Credentials stay encrypted on this PC. No provider is required; missing API capabilities are marked *unsupported*.
+* **Nginx direct hosting.** Install or reuse nginx over SSH on Ubuntu, Debian or Oracle Linux (amd64 and arm64), tuned for 1 GB RAM, without Docker or Coolify. Same ZIP/folder deploy, preview, history and rollback. Optional certbot HTTP-01 after DNS is pointed.
+* **First-party analytics** (optional Google Analytics, Search Console, AdSense). No cookies. Estimated uniques are a daily salted hash. Country comes from Cloudflare or an optional geolocation database you provide.
+* **Monitoring.** CPU, RAM, disk, swap, network and uptime over SSH, plus site and SSL checks, with in-app (and optional webhook) alerts.
+* **Optional sync and backups.** Metadata sync to your own Supabase or Firebase (secrets never leave this PC). ZIP backups can also go to S3 or Supabase Storage.
+* **Google Sign-In** (loopback + PKCE). You create the OAuth client; Rover never ships a secret.
 
 **New in 0.8** (see [docs/RESEARCH.md](docs/RESEARCH.md#rover-08--research-notes))
 

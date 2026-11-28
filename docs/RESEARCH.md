@@ -291,3 +291,7 @@ fully offline, and the app should look like a modern tool.
 * Icons: Lucide (ISC) and Tabler (MIT) are both permissive; Lucide was chosen for its consistent
   1.5–2 px stroke. Brand marks come from Simple Icons (CC0) and are used only to name the service.
 * Font: Inter (SIL OFL 1.1), bundled as two variable woff2 files (~120 KB), no CDN.
+
+## Rover 0.9 — research notes
+
+Universal multi-cloud management on top of Rover 0.8. Official APIs only, a modular provider catalog (`prov` package), Integration Centre, nginx direct on public VPS, first-party analytics, monitoring and optional sync. See [INTEGRATIONS.md](INTEGRATIONS.md) for setup, scopes and what still needs live credentials.
