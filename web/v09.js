@@ -205,7 +205,19 @@ route(/^\/monitor$/, async () => {
         <div class="field"><label>SSL expiry warning (days)</label><input id="aSSL" type="number" value="${a.ssl_days||21}"></div>
       </div>
       <div class="field"><label>Optional webhook (https)</label><input id="aHook" value="${esc(a.webhook||"")}" placeholder="https://"></div>
-      <div class="field"><label>Optional email (for your own mail setup; not sent unless configured)</label><input id="aMail" value="${esc(a.email||"")}"></div>
+      <h3>Email (SMTP)</h3>
+      <p class="muted small">Sent through <em>your</em> mail server. The password is encrypted on this PC (DPAPI on Windows) and is never shown back. Leave the password blank to keep one that is already saved.</p>
+      <div class="grid2">
+        <div class="field"><label>To</label><input id="aMail" value="${esc(a.email||"")}" placeholder="you@example.com"></div>
+        <div class="field"><label>From</label><input id="aFrom" value="${esc(a.smtp_from||"")}" placeholder="rover@example.com"></div>
+        <div class="field"><label>SMTP host</label><input id="aHost" value="${esc(a.smtp_host||"")}" placeholder="smtp.example.com"></div>
+        <div class="field"><label>Port</label><input id="aPort" type="number" value="${a.smtp_port||587}"></div>
+        <div class="field"><label>Username</label><input id="aUser" value="${esc(a.smtp_user||"")}"></div>
+        <div class="field"><label>Password ${a.smtp_pass_set?"(saved)":""}</label><input id="aPass" type="password" autocomplete="new-password" placeholder="${a.smtp_pass_set?"unchanged":""}"></div>
+      </div>
+      <div class="field"><label>TLS</label>
+        <select id="aTLS"><option value="starttls"${(a.smtp_tls||"starttls")==="starttls"?" selected":""}>STARTTLS (default, port 587)</option><option value="tls"${a.smtp_tls==="tls"?" selected":""}>TLS from connect (port 465)</option><option value="none"${a.smtp_tls==="none"?" selected":""}>None (127.0.0.1 only)</option></select>
+      </div>
       <button class="primary" id="aSave">Save alerts</button>
     </div>`;
   $("#mCheck").onclick = () => busy($("#mCheck"), async () => { await api("POST", "/api/monitor/check"); toast("Sample taken", "success"); rerender(); });
@@ -213,7 +225,9 @@ route(/^\/monitor$/, async () => {
     await api("POST", "/api/monitor/alerts", {
       in_app: $("#aIn").checked, windows: $("#aWin").checked,
       cpu: +$("#aCPU").value, ram: +$("#aRAM").value, disk: +$("#aDisk").value, ssl_days: +$("#aSSL").value,
-      webhook: $("#aHook").value, email: $("#aMail").value
+      webhook: $("#aHook").value, email: $("#aMail").value,
+      smtp_from: $("#aFrom").value, smtp_host: $("#aHost").value, smtp_port: +$("#aPort").value,
+      smtp_user: $("#aUser").value, smtp_pass: $("#aPass").value, smtp_tls: $("#aTLS").value
     });
     toast("Alerts saved", "success");
   });

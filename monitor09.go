@@ -22,7 +22,13 @@ type AlertSettings struct {
 	Windows  bool   `json:"windows"`
 	Email    string `json:"email,omitempty"`
 	Webhook  string `json:"webhook,omitempty"`
-	CPU      int    `json:"cpu,omitempty"` // percent, 0 = off
+	SMTPHost string `json:"smtp_host,omitempty"`
+	SMTPPort int    `json:"smtp_port,omitempty"`
+	SMTPUser string `json:"smtp_user,omitempty"`
+	SMTPPass string `json:"smtp_pass,omitempty"` // protectString; never returned to the UI
+	SMTPFrom string `json:"smtp_from,omitempty"`
+	SMTPTLS  string `json:"smtp_tls,omitempty"` // starttls | tls | none (local only)
+	CPU      int    `json:"cpu,omitempty"`      // percent, 0 = off
 	RAM      int    `json:"ram,omitempty"`
 	Disk     int    `json:"disk,omitempty"`
 	SSLDays  int    `json:"ssl_days,omitempty"`
@@ -191,6 +197,16 @@ func fireAlert(a *AlertSettings, level, site, text string) {
 	if a != nil && a.Webhook != "" {
 		go postWebhook(a.Webhook, map[string]any{"level": level, "site": site, "text": text, "time": time.Now().UTC().Format(time.RFC3339)})
 	}
+	if smtpConfigured(a) {
+		aa := *a
+		go func() { _ = smtpSend(&aa, level, site, text) }()
+	}
+}
+
+var smtpSend = sendSMTPAlert
+
+var webhookDo = func(req *http.Request) (*http.Response, error) {
+	return http.DefaultClient.Do(req)
 }
 
 func postWebhook(raw string, body map[string]any) {
@@ -202,7 +218,7 @@ func postWebhook(raw string, body map[string]any) {
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := webhookDo(req)
 	if err != nil {
 		return
 	}
@@ -241,7 +257,7 @@ func apiMonitor(w http.ResponseWriter, r *http.Request) {
 	metricsMu.Unlock()
 	writeJSON(w, 200, map[string]any{
 		"metrics": ms,
-		"alerts":  alertSettings(&c),
+		"alerts":  redactAlertSettings(alertSettings(&c)),
 		"health":  healthSnapshot(),
 	})
 }
@@ -264,11 +280,17 @@ func apiSaveAlerts(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, fmt.Errorf("webhook URL must be https (or a local http address)"))
 		return
 	}
-	if err := withConfig(func(c *Config) error { c.Alerts = &req; return nil }); err != nil {
+	if err := withConfig(func(c *Config) error {
+		if err := mergeAlertSecrets(c.Alerts, &req); err != nil {
+			return err
+		}
+		c.Alerts = &req
+		return nil
+	}); err != nil {
 		writeErr(w, err)
 		return
 	}
-	writeJSON(w, 200, req)
+	writeJSON(w, 200, redactAlertSettings(req))
 }
 
 func monitorTick() {

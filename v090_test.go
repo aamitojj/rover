@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -493,5 +495,111 @@ func TestGoogleReportsProxy(t *testing.T) {
 	adsOut, _ := m["adsense"].(map[string]any)
 	if adsOut["connected"] != true {
 		t.Fatalf("adsense %v", adsOut)
+	}
+}
+
+func TestWebhookAndSMTPAlerts(t *testing.T) {
+	isolate(t)
+	gotHook := make(chan string, 1)
+	hook := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		gotHook <- string(b)
+		w.WriteHeader(204)
+	}))
+	t.Cleanup(hook.Close)
+
+	addr, cap, closeSMTP := startFakeSMTP()
+	t.Cleanup(closeSMTP)
+	host, portStr, _ := strings.Cut(addr, ":")
+	port, _ := strconv.Atoi(portStr)
+
+	pass, _ := protectString("smtp-secret-password")
+	a := &AlertSettings{
+		InApp: false, Windows: false,
+		Webhook: hook.URL,
+		Email:   "ops@example.com", SMTPFrom: "rover@example.com",
+		SMTPHost: host, SMTPPort: port, SMTPUser: "rover", SMTPPass: pass, SMTPTLS: "none",
+	}
+	fireAlert(a, "warn", "shop", "CPU is 97% on the bakery server")
+
+	select {
+	case body := <-gotHook:
+		if !strings.Contains(body, "CPU is 97%") || !strings.Contains(body, `"site":"shop"`) {
+			t.Fatalf("webhook body %s", body)
+		}
+		if strings.Contains(body, "smtp-secret-password") || strings.Contains(body, "dpapi:") {
+			t.Fatalf("secret in webhook: %s", body)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("webhook not posted")
+	}
+	var from, data string
+	var to []string
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		from, data, to = cap.snapshot()
+		if data != "" {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if from != "rover@example.com" || len(to) != 1 || to[0] != "ops@example.com" {
+		t.Fatalf("smtp envelope from=%q to=%v", from, to)
+	}
+	if !strings.Contains(data, "CPU is 97%") || !strings.Contains(data, "Subject: Rover alert (warn)") {
+		t.Fatalf("smtp data %q", data)
+	}
+	if strings.Contains(data, "smtp-secret-password") {
+		t.Fatal("password in message")
+	}
+
+	// GET /api/monitor must not return the password.
+	_ = withConfig(func(c *Config) error { c.Alerts = a; return nil })
+	code, out := call(t, integMux(), "GET", "/api/monitor", nil)
+	if code != 200 {
+		t.Fatalf("monitor %d %v", code, out)
+	}
+	raw, _ := json.Marshal(out)
+	if strings.Contains(string(raw), "smtp-secret-password") || strings.Contains(string(raw), "plain:smtp") {
+		t.Fatalf("password leaked: %s", raw)
+	}
+	alerts, _ := out["alerts"].(map[string]any)
+	if alerts["smtp_pass_set"] != true || alerts["smtp_pass"] != nil && fmt.Sprint(alerts["smtp_pass"]) != "" && fmt.Sprint(alerts["smtp_pass"]) != "<nil>" {
+		// smtp_pass should be omitted or empty
+		if v, ok := alerts["smtp_pass"]; ok && v != "" && v != nil {
+			t.Fatalf("smtp_pass in view: %v", alerts)
+		}
+	}
+
+	// Unencrypted SMTP to a public host is refused.
+	if err := sendSMTPAlert(&AlertSettings{SMTPHost: "smtp.example.com", SMTPPort: 25, SMTPTLS: "none", SMTPFrom: "a@b.co", Email: "c@d.co"}, "info", "", "hi"); err == nil || !strings.Contains(err.Error(), "unencrypted") {
+		t.Fatalf("wanted local-only none, got %v", err)
+	}
+
+	// Saving a blank password keeps the stored one; the response is redacted.
+	code, out = call(t, integMux(), "POST", "/api/monitor/alerts", map[string]any{
+		"email": "ops@example.com", "smtp_from": "rover@example.com",
+		"smtp_host": "127.0.0.1", "smtp_port": port, "smtp_user": "rover", "smtp_pass": "", "smtp_tls": "none",
+		"webhook": hook.URL,
+	})
+	if code != 200 {
+		t.Fatalf("save %d %v", code, out)
+	}
+	if out["smtp_pass_set"] != true || out["smtp_pass"] != nil && fmt.Sprint(out["smtp_pass"]) != "" && out["smtp_pass"] != nil {
+		if v := out["smtp_pass"]; v != nil && v != "" {
+			t.Fatalf("save leaked pass %v", out)
+		}
+	}
+	c := snapshotConfig()
+	if secret(c.Alerts.SMTPPass) != "smtp-secret-password" {
+		t.Fatalf("stored pass lost: %q", c.Alerts.SMTPPass)
+	}
+}
+
+func TestWebhookMustBeHTTPS(t *testing.T) {
+	isolate(t)
+	code, out := call(t, integMux(), "POST", "/api/monitor/alerts", map[string]any{"webhook": "http://evil.example/hook"})
+	if code == 200 {
+		t.Fatalf("accepted plain http webhook: %v", out)
 	}
 }
