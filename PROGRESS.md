@@ -25,6 +25,9 @@ Commits from this implementation (newest last). Each URL is `https://github.com/
 | `92236af8e7810119e9de91e117bbe9d8c3b9fb29` | https://github.com/aamitojj/rover/commit/92236af8e7810119e9de91e117bbe9d8c3b9fb29 | Progress log with first green CI, SHA256 sums, screenshots; Integrations nav icon uses `plug` |
 | `d66b584edb21a94814dd2c5f0c7c0f68e931f42c` | https://github.com/aamitojj/rover/commit/d66b584edb21a94814dd2c5f0c7c0f68e931f42c | Firestore REST helpers (`ToFirestoreFields`, `WriteSyncDocument`) and unit tests |
 | `337f53c6388e2172c07bb346eab0b8457d0416ef` | https://github.com/aamitojj/rover/commit/337f53c6388e2172c07bb346eab0b8457d0416ef | Firebase metadata sync writes to `rover_sync/{device}` via official REST; secrets refused; mocked `/api/sync/now` test; INTEGRATIONS.md |
+| `372d490dbbe69ae93e29a0c5013493a309d5294a` | https://github.com/aamitojj/rover/commit/372d490dbbe69ae93e29a0c5013493a309d5294a | Progress log for Firebase Firestore sync write |
+| `c4fb014947a959652f85fa3823d76e9c8898154a` | https://github.com/aamitojj/rover/commit/c4fb014947a959652f85fa3823d76e9c8898154a | Proxy GA4 `runReport`, Search Console `searchAnalytics.query` and AdSense `reports:generate` through `/api/analytics/{slug}/google`; official URL encoding; mocks |
+| `b66dd07b555a188560500f71f4d9210f578e4baf` | https://github.com/aamitojj/rover/commit/b66dd07b555a188560500f71f4d9210f578e4baf | Analytics UI tables for those reports, proxy tests, table styles, INTEGRATIONS.md |
 
 
 A follow-up commit on this same branch updates this log with CI results, screenshot paths, SHA256 sums, and a nav-icon fix (`integrations` uses the existing `plug` glyph because `blocks` is not in `web/icons.js`).
@@ -34,7 +37,7 @@ A follow-up commit on this same branch updates this log with CI results, screens
 - `gofmt -l .` clean
 - `go vet ./...` and `GOOS=windows go vet ./...` clean
 - `node --check web/*.js` clean
-- `go test -count=1 ./...` pass — **154** tests, 0 fail (`hostpanel` + `hostpanel/prov`) after Firebase sync write (was 151)
+- `go test -count=1 ./...` pass — **156** tests, 0 fail (`hostpanel` + `hostpanel/prov`) after Google report proxy (was 154 after Firebase sync)
 - `go test -race -count=1 ./...` pass
 - Linux `go build` and `GOOS=windows GOARCH=amd64 go build` succeed
 
@@ -56,8 +59,22 @@ A later push of this log will start another Actions run; the green verification 
 
 ### Item 1 — Firebase metadata sync write (28 Nov 2026, Asia/Calcutta)
 
-- Local: gofmt, `go vet` (linux + windows), `go test -race`, Linux and Windows builds all passed (**154** tests).
-- CI: recorded after this log is pushed. Implementation tip is `337f53c`.
+- Local: gofmt, `go vet` (linux + windows), `go test -race`, Linux and Windows builds all passed (**154** tests at that tip).
+- CI (head `372d490`, includes the log): **success** — https://github.com/aamitojj/rover/actions/runs/46109611694
+  - Started 10:23:35 AM IST, finished 10:25:21 AM IST (28 Nov 2026, Asia/Calcutta)
+  - test: https://github.com/aamitojj/rover/actions/runs/46109611694/job/140869983350
+  - windows: https://github.com/aamitojj/rover/actions/runs/46109611694/job/140870134970
+  - Artifact `rover-0.9.0` id `15249331578` — https://github.com/aamitojj/rover/actions/runs/46109611694#artifacts
+  - archive digest `sha256:7fa5858eb58a94815e37f8e7c4bd32fd2af20badb0738f933e5cf48b46de8ee5`
+  - `rover.exe` SHA256 `b6e40bd2d14f090c49f6eb49417efacf261111476ce7bbd0d2b74dad42276033` (14,109,184 bytes)
+  - `Rover-Setup-0.9.0.exe` SHA256 `b8ed7a3b7609325048ba5a144f5cf618d78800500055ebc81586004cb27afcd8` (6,518,817 bytes)
+- Also green: implementation commits `d66b584` (https://github.com/aamitojj/rover/actions/runs/46109578478) and `337f53c` (https://github.com/aamitojj/rover/actions/runs/46109589236). Offline/publish skipped. No release published.
+
+### Item 2 — GA4 / Search Console / AdSense report proxy (28 Nov 2026, Asia/Calcutta)
+
+- Local: gofmt, `go vet` (linux + windows), `go test -race`, Linux and Windows builds all passed (**156** tests).
+- Analytics UI screenshot refreshed: `/workspace/rover-shots-v09/04-analytics.png` (full page, includes Google report cards).
+- CI: recorded after this log is pushed. Implementation tip is `b66dd07`.
 
 ### Screenshots and source zip
 
@@ -104,7 +121,7 @@ A later push of this log will start another Actions run; the green verification 
 - [x] Visitors, pageviews, daily-salt uniques (no cookies, no raw IPs), CF-IPCountry, devices, browsers, referrers, top pages, bandwidth, engagement, 4xx/5xx, bot filter
 - [x] Optional GA4 / Search Console / AdSense catalog entries and Data API helpers
 - [ ] Optional user-provided MMDB (country today is CF header or documented gap)
-- [ ] Wire Integration Centre “Google reports” through to live `GA4RunReport` / `GSCQuery` / `AdSenseReport` (currently a connected note)
+- [x] `/api/analytics/{slug}/google` proxies `GA4RunReport`, `GSCQuery` and `AdSenseReport` (httptest mocks); tables shown on the Analytics page. Live credentials still needed for real numbers.
 
 ### 6. Monitoring
 - [x] CPU/RAM/disk/swap/network over SSH `/proc`, uptime, site availability, SSL expiry
@@ -144,4 +161,4 @@ A later push of this log will start another Actions run; the green verification 
 
 ## Honest leftover (do not claim gates pass)
 
-Still open: live nginx/certbot on a public VPS; live tokens for each cloud (including a two-device Firebase sync); optional MMDB; email alerts; full Google report proxy. Those live gates have **not** been claimed. Do not tag or publish until the user says so.
+Still open: live nginx/certbot on a public VPS; live tokens for each cloud (including a two-device Firebase sync and live GA/GSC/AdSense numbers); optional MMDB; email alerts. The Google report *proxy* is implemented and mocked; it has not been click-tested with a real Google account. Do not tag or publish until the user says so.
