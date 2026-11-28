@@ -169,7 +169,9 @@ echo ok`, shellQuote(base), shellQuote(names), liteShellFuncs(slug))
 // commands instead of running them (tests).
 const liteEngineScript = `set -eu
 run() { if [ -n "${HP_DRY:-}" ]; then echo "+ $*"; else "$@"; fi; }
-if command -v apt-get >/dev/null 2>&1 || [ -n "${HP_DRY:-}" ]; then
+if command -v nginx >/dev/null 2>&1 && [ -z "${HP_DRY:-}" ]; then
+  echo "Reusing existing nginx installation"
+elif command -v apt-get >/dev/null 2>&1 || [ -n "${HP_DRY:-}" ]; then
   echo "Installing nginx (lightweight mode)..."
   run env DEBIAN_FRONTEND=noninteractive apt-get update -q
   run env DEBIAN_FRONTEND=noninteractive apt-get install -y -q nginx ssl-cert curl ca-certificates
@@ -183,7 +185,13 @@ else
   echo "This Linux has neither apt nor dnf; install nginx yourself, then run setup again." >&2
   exit 1
 fi
+if [ -z "${HP_DRY:-}" ] && { [ ! -s /etc/ssl/certs/ssl-cert-snakeoil.pem ] || [ ! -s /etc/ssl/private/ssl-cert-snakeoil.key ]; }; then
+  run mkdir -p /etc/ssl/private /etc/ssl/certs
+  run openssl req -x509 -nodes -newkey rsa:2048 -days 365 -subj /CN=rover-preview -keyout /etc/ssl/private/ssl-cert-snakeoil.key -out /etc/ssl/certs/ssl-cert-snakeoil.pem
+  run chmod 600 /etc/ssl/private/ssl-cert-snakeoil.key
+fi
 run mkdir -p /data/hostpanel/sites
+run nginx -t
 run systemctl enable --now nginx
 if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -q "Status: active"; then
   run ufw allow 80/tcp
