@@ -28,6 +28,9 @@ Commits from this implementation (newest last). Each URL is `https://github.com/
 | `372d490dbbe69ae93e29a0c5013493a309d5294a` | https://github.com/aamitojj/rover/commit/372d490dbbe69ae93e29a0c5013493a309d5294a | Progress log for Firebase Firestore sync write |
 | `c4fb014947a959652f85fa3823d76e9c8898154a` | https://github.com/aamitojj/rover/commit/c4fb014947a959652f85fa3823d76e9c8898154a | Proxy GA4 `runReport`, Search Console `searchAnalytics.query` and AdSense `reports:generate` through `/api/analytics/{slug}/google`; official URL encoding; mocks |
 | `b66dd07b555a188560500f71f4d9210f578e4baf` | https://github.com/aamitojj/rover/commit/b66dd07b555a188560500f71f4d9210f578e4baf | Analytics UI tables for those reports, proxy tests, table styles, INTEGRATIONS.md |
+| `713b279383d6c6aa8f261ce055a0d2277a2edde6` | https://github.com/aamitojj/rover/commit/713b279383d6c6aa8f261ce055a0d2277a2edde6 | Progress log for Google report proxy and Firebase CI |
+| `35eed7fcd615a321efe57f2e5c21f1ea4ffe867b` | https://github.com/aamitojj/rover/commit/35eed7fcd615a321efe57f2e5c21f1ea4ffe867b | SMTP email alerts (DPAPI-stored password), webhook tests, Monitoring UI |
+| `4f2c50a90a56174ad31a1fa11c29d5bed6822631` | https://github.com/aamitojj/rover/commit/4f2c50a90a56174ad31a1fa11c29d5bed6822631 | Document SMTP and https webhook alerts |
 
 
 A follow-up commit on this same branch updates this log with CI results, screenshot paths, SHA256 sums, and a nav-icon fix (`integrations` uses the existing `plug` glyph because `blocks` is not in `web/icons.js`).
@@ -37,7 +40,7 @@ A follow-up commit on this same branch updates this log with CI results, screens
 - `gofmt -l .` clean
 - `go vet ./...` and `GOOS=windows go vet ./...` clean
 - `node --check web/*.js` clean
-- `go test -count=1 ./...` pass — **156** tests, 0 fail (`hostpanel` + `hostpanel/prov`) after Google report proxy (was 154 after Firebase sync)
+- `go test -count=1 ./...` pass — **158** tests, 0 fail (`hostpanel` + `hostpanel/prov`) after SMTP/webhook alerts (was 156 after Google reports)
 - `go test -race -count=1 ./...` pass
 - Linux `go build` and `GOOS=windows GOARCH=amd64 go build` succeed
 
@@ -74,7 +77,17 @@ A later push of this log will start another Actions run; the green verification 
 
 - Local: gofmt, `go vet` (linux + windows), `go test -race`, Linux and Windows builds all passed (**156** tests).
 - Analytics UI screenshot refreshed: `/workspace/rover-shots-v09/04-analytics.png` (full page, includes Google report cards).
-- CI: recorded after this log is pushed. Implementation tip is `b66dd07`.
+- CI (head `713b279`, includes the log): **success** — https://github.com/aamitojj/rover/actions/runs/46110192830
+  - Started 10:31:30 AM IST, finished 10:32:47 AM IST (28 Nov 2026, Asia/Calcutta)
+  - Artifact `rover-0.9.0` id `15249566615` — https://github.com/aamitojj/rover/actions/runs/46110192830#artifacts
+  - archive digest `sha256:df838574f7cea545eaecb15c53b6aebd734947bbfec0da73f809466c048bdcb7`
+- Also green: `c4fb014` (https://github.com/aamitojj/rover/actions/runs/46110126584) and `b66dd07` (https://github.com/aamitojj/rover/actions/runs/46110164443). Offline/publish skipped.
+
+### Item 3 — SMTP email alerter + webhook tests (28 Nov 2026, Asia/Calcutta)
+
+- Local: gofmt, `go vet` (linux + windows), `go test -race`, Linux and Windows builds all passed (**158** tests).
+- Monitoring screenshot refreshed: `/workspace/rover-shots-v09/05-monitoring.png` (full page, SMTP fields).
+- CI: recorded after this log is pushed. Implementation tip is `4f2c50a` (code in `35eed7f`).
 
 ### Screenshots and source zip
 
@@ -127,7 +140,7 @@ A later push of this log will start another Actions run; the green verification 
 - [x] CPU/RAM/disk/swap/network over SSH `/proc`, uptime, site availability, SSL expiry
 - [x] In-app + Windows flash alert; optional HTTPS webhook
 - [x] Multiple servers; AWS cost behind confirm
-- [ ] Full email alerter (not a mailer yet)
+- [x] SMTP alerter (STARTTLS / TLS / local none), DPAPI-stored password never returned; https webhook tested
 - [ ] Live multi-server soak
 
 ### 7. Backups
@@ -161,4 +174,4 @@ A later push of this log will start another Actions run; the green verification 
 
 ## Honest leftover (do not claim gates pass)
 
-Still open: live nginx/certbot on a public VPS; live tokens for each cloud (including a two-device Firebase sync and live GA/GSC/AdSense numbers); optional MMDB; email alerts. The Google report *proxy* is implemented and mocked; it has not been click-tested with a real Google account. Do not tag or publish until the user says so.
+Still open: live nginx/certbot on a public VPS; live tokens for each cloud (including a two-device Firebase sync, live GA/GSC/AdSense numbers, and a real SMTP send); optional MMDB. Email/webhook alerting is implemented and mocked; it has not been click-tested against a real mailbox. Do not tag or publish until the user says so.
