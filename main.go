@@ -292,6 +292,9 @@ func routes() http.Handler {
 	registerRegistrarRoutes(mux)
 	registerServerRoutes(mux)
 	registerHostingRoutes(mux)
+	mux.HandleFunc("GET /api/providers", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, 200, providerCatalog())
+	})
 	registerJivRoutes(mux)
 	registerV07Routes(mux)
 	registerGuideRoutes(mux)
