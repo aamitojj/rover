@@ -292,6 +292,15 @@ func routes() http.Handler {
 	registerRegistrarRoutes(mux)
 	registerServerRoutes(mux)
 	registerHostingRoutes(mux)
+	mux.HandleFunc("GET /api/providers", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, 200, providerCatalog())
+	})
+	registerIntegRoutes(mux)
+	registerNginxDirectRoutes(mux)
+	registerAnalyticsRoutes(mux)
+	registerMonitor09Routes(mux)
+	registerSyncRoutes(mux)
+	registerGoogleAuthRoutes(mux)
 	registerJivRoutes(mux)
 	registerV07Routes(mux)
 	registerGuideRoutes(mux)
@@ -375,7 +384,8 @@ func routes() http.Handler {
 			writeErr(w, err)
 			return
 		}
-		if err := activateRelease(r.PathValue("slug"), req.Release); err != nil {
+		slug := r.PathValue("slug")
+		if err := withSiteLock(slug, func() error { return activateRelease(slug, req.Release) }); err != nil {
 			writeErr(w, err)
 			return
 		}
@@ -764,10 +774,12 @@ func apiDeploy(w http.ResponseWriter, r *http.Request) {
 		rememberFolder(ws.LocalPath)
 	}
 	j := newJob("deploy", func(j *Job) error {
-		defer ws.Close()
-		rep := runChecks(ws)
-		j.Logf("Checks: %d passed, %d warnings, %d failed (open App Testing for details and a live preview).", rep.Counts["pass"], rep.Counts["warn"], rep.Counts["fail"])
-		return deployWorkspace(j, slug, ws)
+		return withSiteLock(slug, func() error {
+			defer ws.Close()
+			rep := runChecks(ws)
+			j.Logf("Checks: %d passed, %d warnings, %d failed (open App Testing for details and a live preview).", rep.Counts["pass"], rep.Counts["warn"], rep.Counts["fail"])
+			return deployWorkspace(j, slug, ws)
+		})
 	})
 	writeJSON(w, 200, map[string]any{"job": j.ID})
 }

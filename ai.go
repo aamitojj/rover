@@ -340,7 +340,7 @@ var (
 	reIPv6    = regexp.MustCompile(`\b(?:[0-9a-fA-F]{1,4}:){3,7}[0-9a-fA-F]{1,4}\b`)
 	reSecrets = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)\b(bearer|token|password|passwd|secret|api[_-]?key|authorization)\b(["']?\s*[:=]\s*["']?|\s+)[^\s"',;]{4,}`),
-		regexp.MustCompile(`\b(sk|pk|rk|xai|gsk|ghp|gho|ghs|github_pat|glpat|nfp|sk-ant|sk-or)[-_][A-Za-z0-9_\-]{12,}`),
+		regexp.MustCompile(`\b(sk|pk|rk|xai|gsk|ghp|gho|ghs|github_pat|glpat|nfp|sbp|sk-ant|sk-or)[-_][A-Za-z0-9_\-]{12,}`),
 		regexp.MustCompile(`\bAIza[0-9A-Za-z_\-]{30,}`),
 		regexp.MustCompile(`\b\d+\|[A-Za-z0-9]{30,}\b`), // Laravel Sanctum (Coolify) tokens
 		regexp.MustCompile(`-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----`),

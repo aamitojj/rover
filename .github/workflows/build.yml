@@ -9,9 +9,10 @@ name: build
 # copies find the update too. See docs/RELEASING.md.
 on:
   push:
-    branches: [main]
+    branches: [main, feature/v0.9-cloud-analytics]
     tags: ["v*"]
   pull_request:
+  workflow_dispatch:
   workflow_call:
     inputs:
       version: { type: string, required: false, default: "" }
@@ -48,7 +49,7 @@ jobs:
         env: { IN_VER: "${{ inputs.version }}" }
         run: |
           v="${IN_VER#v}"
-          if [[ -z "$v" ]]; then v="${GITHUB_REF_NAME#v}"; [[ "$GITHUB_REF_TYPE" == tag ]] || v="0.8.0"; fi
+          if [[ -z "$v" ]]; then v="${GITHUB_REF_NAME#v}"; [[ "$GITHUB_REF_TYPE" == tag ]] || v="0.9.0"; fi
           [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || { echo "Bad version: $v"; exit 1; }
           echo "VER=$v" >> "$GITHUB_ENV"
           echo "WINVER=${v%%-*}.0" >> "$GITHUB_ENV"

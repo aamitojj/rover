@@ -74,7 +74,7 @@ hp_container() { :; }
 hp_conf_install() {
   CD="$BASE/nginx"
   mkdir -p "$CD"
-  if [ -f "$CD/default.conf" ]; then cp -f "$CD/default.conf" "$CD/.prev.conf.bak"; else rm -f "$CD/.prev.conf.bak"; fi
+  if [ -f "$CD/default.conf" ]; then cp -f "$CD/default.conf" "$CD/.prev.conf.bak" || return 1; else rm -f "$CD/.prev.conf.bak"; fi
   if grep -q 'listen 80 default_server' "$1"; then
     sed -e 's#listen 80 default_server;#listen 80; listen 443 ssl; ssl_certificate /etc/ssl/certs/ssl-cert-snakeoil.pem; ssl_certificate_key /etc/ssl/private/ssl-cert-snakeoil.key;#' \
         -e "s#server_name _;#server_name $(cat "$CD/.hosts" 2>/dev/null || echo _);#" \
@@ -86,10 +86,15 @@ hp_conf_install() {
   fi
   chmod 644 "$CD/.new.tmp" && mv -f "$CD/.new.tmp" "$CD/default.conf"
   INC="${HP_NGINX_CONFD:-/etc/nginx/conf.d}/dilreet-%[2]s.conf"
-  [ -f "$INC" ] || printf 'include %%s/nginx/default.conf;\n' "$BASE" > "$INC"
+  NEW_INC=0
+  if [ ! -f "$INC" ]; then
+    printf 'include %%s/nginx/default.conf;\n' "$BASE" > "$INC" || return 1
+    NEW_INC=1
+  fi
   if ! OUT=$(nginx -t 2>&1); then
     echo "nginx rejected the generated config:" >&2; echo "$OUT" >&2
-    if [ -f "$CD/.prev.conf.bak" ]; then mv -f "$CD/.prev.conf.bak" "$CD/default.conf"; fi
+    if [ -f "$CD/.prev.conf.bak" ]; then mv -f "$CD/.prev.conf.bak" "$CD/default.conf"; else rm -f "$CD/default.conf"; fi
+    if [ "$NEW_INC" = 1 ]; then rm -f "$INC"; fi
     return 1
   fi
   rm -f "$CD/.prev.conf.bak"
@@ -169,7 +174,9 @@ echo ok`, shellQuote(base), shellQuote(names), liteShellFuncs(slug))
 // commands instead of running them (tests).
 const liteEngineScript = `set -eu
 run() { if [ -n "${HP_DRY:-}" ]; then echo "+ $*"; else "$@"; fi; }
-if command -v apt-get >/dev/null 2>&1 || [ -n "${HP_DRY:-}" ]; then
+if command -v nginx >/dev/null 2>&1 && [ -z "${HP_DRY:-}" ]; then
+  echo "Reusing existing nginx installation"
+elif command -v apt-get >/dev/null 2>&1 || [ -n "${HP_DRY:-}" ]; then
   echo "Installing nginx (lightweight mode)..."
   run env DEBIAN_FRONTEND=noninteractive apt-get update -q
   run env DEBIAN_FRONTEND=noninteractive apt-get install -y -q nginx ssl-cert curl ca-certificates
@@ -183,7 +190,13 @@ else
   echo "This Linux has neither apt nor dnf; install nginx yourself, then run setup again." >&2
   exit 1
 fi
+if [ -z "${HP_DRY:-}" ] && { [ ! -s /etc/ssl/certs/ssl-cert-snakeoil.pem ] || [ ! -s /etc/ssl/private/ssl-cert-snakeoil.key ]; }; then
+  run mkdir -p /etc/ssl/private /etc/ssl/certs
+  run openssl req -x509 -nodes -newkey rsa:2048 -days 365 -subj /CN=rover-preview -keyout /etc/ssl/private/ssl-cert-snakeoil.key -out /etc/ssl/certs/ssl-cert-snakeoil.pem
+  run chmod 600 /etc/ssl/private/ssl-cert-snakeoil.key
+fi
 run mkdir -p /data/hostpanel/sites
+run nginx -t
 run systemctl enable --now nginx
 if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -q "Status: active"; then
   run ufw allow 80/tcp

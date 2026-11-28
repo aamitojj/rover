@@ -92,6 +92,9 @@ func backgroundTick(ctx context.Context, now time.Time) {
 		go runHealthFor(nil)
 	}
 	backupTick(now)
+	if now.Sub(bg.lastHealth) <= 10*time.Minute { // just ran health: also sample metrics
+		go monitorTick()
+	}
 }
 
 // bgReconnect re-opens SSH with Rover's own key (never a password).
