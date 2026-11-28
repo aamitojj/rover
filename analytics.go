@@ -203,6 +203,7 @@ func registerAnalyticsRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/analytics/{slug}", apiAnalyticsSummary)
 	mux.HandleFunc("GET /api/analytics/{slug}/google", apiAnalyticsGoogle)
 	mux.HandleFunc("POST /api/analytics/{slug}/ingest-log", apiIngestLog)
+	registerAnalyticsSettingsRoutes(mux)
 }
 
 func handleBeacon(w http.ResponseWriter, r *http.Request) {
@@ -239,10 +240,11 @@ func handleBeacon(w http.ResponseWriter, r *http.Request) {
 	eng, _ := strconv.Atoi(r.URL.Query().Get("g"))
 	ev := analyticsEvent{
 		Day: day, Site: site, Path: firstNonEmpty(r.URL.Query().Get("p"), "/"),
-		Referrer: stripRef(r.URL.Query().Get("r")), Country: countryOf(r),
-		Device: dev, Browser: br, Unique: uniqueHash(day, ip, ua),
+		Referrer: stripRef(r.URL.Query().Get("r")),
+		Device:   dev, Browser: br, Unique: uniqueHash(day, ip, ua),
 		EngageMs: eng, Bot: isBot(ua), Status: 200,
 	}
+	ev.Country, ev.Region, ev.City = geoFromRequest(r)
 	if c.Analytics != nil && c.Analytics.BotFilter && ev.Bot {
 		w.WriteHeader(204)
 		return
@@ -457,6 +459,18 @@ func ingestAccessLog(site, text string, dropBots bool) (int, error) {
 		}
 		dev, br := classifyDevice(ua)
 		ev := analyticsEvent{Day: day, Site: site, Path: path, Referrer: stripRef(ref), Country: strings.ToUpper(country), Device: dev, Browser: br, Unique: uniqueHash(day, ip, ua), Bytes: by, Status: status, Bot: isBot(ua)}
+		if ev.Country == "" || ev.Region == "" || ev.City == "" {
+			cc, rg, ct := lookupGeo(ip)
+			if ev.Country == "" {
+				ev.Country = cc
+			}
+			if ev.Region == "" {
+				ev.Region = rg
+			}
+			if ev.City == "" {
+				ev.City = ct
+			}
+		}
 		if dropBots && ev.Bot {
 			continue
 		}
