@@ -62,7 +62,7 @@ func TestMigrateV03Config(t *testing.T) {
 		t.Fatalf("not normalised: group=%q tags=%v", s.Group, s.Tags)
 	}
 	b, _ := os.ReadFile(filepath.Join(dir, "config.json"))
-	if !strings.Contains(string(b), `"config_version": 8`) {
+	if !strings.Contains(string(b), `"config_version": 9`) {
 		t.Fatal("upgraded config was not saved")
 	}
 	// second load is a no-op and keeps data
