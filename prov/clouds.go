@@ -304,7 +304,7 @@ func (gcpProv) Test(ctx context.Context, tr *Transport, creds map[string]string)
 	if err != nil {
 		return nil, err
 	}
-	project := firebaseProjectID(creds)
+	project := FirebaseProjectID(creds)
 	if project == "" {
 		return nil, missing("project_id")
 	}

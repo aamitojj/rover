@@ -36,7 +36,7 @@ func (firebaseProv) Test(ctx context.Context, tr *Transport, creds map[string]st
 	if err != nil {
 		return nil, err
 	}
-	project := firebaseProjectID(creds)
+	project := FirebaseProjectID(creds)
 	mgmt := tr.BaseURL("firebase", "https://firebase.googleapis.com")
 	info := &Info{Health: "ok", Status: StatusConnected, Who: project}
 	if project == "" {
@@ -94,7 +94,7 @@ func (firebaseProv) Test(ctx context.Context, tr *Transport, creds map[string]st
 	return info, nil
 }
 
-func firebaseProjectID(creds map[string]string) string {
+func FirebaseProjectID(creds map[string]string) string {
 	if p := strings.TrimSpace(creds["project_id"]); p != "" {
 		return p
 	}

@@ -301,3 +301,70 @@ func TestMissingCreds(t *testing.T) {
 		}
 	}
 }
+
+func TestFirestoreFieldsAndSecretRefuse(t *testing.T) {
+	fields, err := ToFirestoreFields(map[string]any{
+		"device":  "dev_ab",
+		"updated": "2026-11-28T00:00:00Z",
+		"projects": []any{
+			map[string]any{"slug": "shop", "name": "Shop"},
+		},
+		"settings": map[string]any{"keep_deploys": 8, "rover_version": "0.9.0"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fields["device"].(map[string]any)["stringValue"] != "dev_ab" {
+		t.Fatalf("device: %v", fields["device"])
+	}
+	settings := fields["settings"].(map[string]any)["mapValue"].(map[string]any)["fields"].(map[string]any)
+	if settings["keep_deploys"].(map[string]any)["integerValue"] != "8" {
+		t.Fatalf("keep_deploys: %v", settings["keep_deploys"])
+	}
+	projects := fields["projects"].(map[string]any)["arrayValue"].(map[string]any)["values"].([]any)
+	if len(projects) != 1 {
+		t.Fatalf("projects: %v", projects)
+	}
+	if !ValidFirestoreID("dev_ab12") || ValidFirestoreID("a/b") || ValidFirestoreID("") || ValidFirestoreID("..") {
+		t.Fatal("ValidFirestoreID")
+	}
+}
+
+func TestWriteSyncDocumentMock(t *testing.T) {
+	var gotPath, gotAuth, gotBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath, gotAuth = r.URL.Path, r.Header.Get("Authorization")
+		b, _ := io.ReadAll(r.Body)
+		gotBody = string(b)
+		if r.Method != "PATCH" {
+			t.Errorf("method %s", r.Method)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"name":"projects/demo/databases/(default)/documents/rover_sync/dev_ab"}`))
+	}))
+	t.Cleanup(srv.Close)
+	tr := &Transport{Base: map[string]string{"firestore": srv.URL}}
+	payload := []byte(`{"device":"dev_ab","updated":"2026-11-28T00:00:00Z","projects":[{"slug":"shop","name":"Shop","domain":"shop.com"}],"settings":{"rover_version":"0.9.0"}}`)
+	if err := WriteSyncDocument(context.Background(), tr, map[string]string{"access_token": "ya29.demo", "project_id": "demo"}, "demo", "dev_ab", payload); err != nil {
+		t.Fatal(err)
+	}
+	if gotPath != "/v1/projects/demo/databases/(default)/documents/rover_sync/dev_ab" {
+		t.Fatalf("path %s", gotPath)
+	}
+	if gotAuth != "Bearer ya29.demo" {
+		t.Fatalf("auth %s", gotAuth)
+	}
+	if !strings.Contains(gotBody, `"stringValue":"shop.com"`) || !strings.Contains(gotBody, `"stringValue":"dev_ab"`) {
+		t.Fatalf("body %s", gotBody)
+	}
+	if strings.Contains(gotBody, "ya29") || strings.Contains(gotBody, "PRIVATE") || strings.Contains(gotBody, `"cred"`) {
+		t.Fatalf("secret in firestore body: %s", gotBody)
+	}
+	err := WriteSyncDocument(context.Background(), tr, map[string]string{"access_token": "ya29.demo"}, "demo", "dev_ab", []byte(`{"note":"-----BEGIN PRIVATE KEY-----"}`))
+	if err == nil || !strings.Contains(err.Error(), "secret") {
+		t.Fatalf("wanted secret refuse, got %v", err)
+	}
+	if err := WriteSyncDocument(context.Background(), tr, map[string]string{"access_token": "t"}, "demo", "dev/../x", payload); err == nil {
+		t.Fatal("wanted invalid id")
+	}
+}
