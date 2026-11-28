@@ -163,3 +163,9 @@ a{text-underline-offset:2px;text-decoration-thickness:1px}
 .attn a,.pname a,.dlist a{text-decoration:none}
 .frow .fname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .frow .fmeta{font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
+
+/* v0.9 Integration Centre */
+.cards.four{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+.cards.four .stat{font-size:1.6rem;font-weight:650}
+@media (max-width:900px){.cards.four{grid-template-columns:1fr 1fr}}
+

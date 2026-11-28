@@ -189,7 +189,7 @@
   if (typeof projTabs !== "undefined") projTabs.forEach(t => { if (PT[t[0]] !== undefined) t[2] = ic(PT[t[0]]); });
 
   // ---------- sidebar ----------
-  const NAV = { dashboard: "layout-dashboard", projects: "folder-kanban", deploys: "rocket", domains: "globe", hosting: "cloud", testing: "flask-conical", jiv: "sparkles", settings: "settings", thispc: "laptop", guides: "graduation-cap" };
+  const NAV = { dashboard: "layout-dashboard", projects: "folder-kanban", deploys: "rocket", domains: "globe", hosting: "cloud", integrations: "blocks", analytics: "chart-line", monitor: "activity", testing: "flask-conical", jiv: "sparkles", settings: "settings", thispc: "laptop", guides: "graduation-cap" };
   function navIcons() {
     document.querySelectorAll("#nav > a[data-route]").forEach(a => {
       const n = NAV[a.dataset.route] || (a.getAttribute("href") || "").replace(/^#\//, "").split("/")[0];
