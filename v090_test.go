@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -601,5 +602,101 @@ func TestWebhookMustBeHTTPS(t *testing.T) {
 	code, out := call(t, integMux(), "POST", "/api/monitor/alerts", map[string]any{"webhook": "http://evil.example/hook"})
 	if code == 200 {
 		t.Fatalf("accepted plain http webhook: %v", out)
+	}
+}
+
+func testCityMMDB(t *testing.T) string {
+	t.Helper()
+	b, err := os.ReadFile("testdata/test-city.mmdb.b64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := decodeB64(strings.TrimSpace(string(b)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	path := filepath.Join(dir, "test-city.mmdb")
+	if err := os.WriteFile(path, raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func decodeB64(s string) ([]byte, error) {
+	return base64.StdEncoding.DecodeString(s)
+}
+
+func TestMMDBCityLookup(t *testing.T) {
+	isolate(t)
+	path := testCityMMDB(t)
+	cc, rg, ct := extractGeo(nil)
+	if cc != "" || rg != "" || ct != "" {
+		t.Fatal("empty record")
+	}
+	_ = withConfig(func(c *Config) error {
+		if c.Analytics == nil {
+			c.Analytics = &AnalyticsSettings{Enabled: true, BotFilter: true, RetentionDays: 90}
+		}
+		c.Analytics.MMDBPath = path
+		return nil
+	})
+	cc, rg, ct = lookupGeo("8.8.8.8")
+	if cc != "US" || rg != "CA" || ct != "Mountain View" {
+		t.Fatalf("8.8.8.8: %q %q %q", cc, rg, ct)
+	}
+	cc, rg, ct = lookupGeo("103.21.244.10")
+	if cc != "IN" || rg != "MH" || ct != "Mumbai" {
+		t.Fatalf("mumbai: %q %q %q", cc, rg, ct)
+	}
+	cc, rg, ct = lookupGeo("9.9.9.9")
+	if cc != "" || ct != "" {
+		t.Fatalf("unknown ip: %q %q %q", cc, rg, ct)
+	}
+	code, out := call(t, integMux(), "GET", "/api/analytics/settings", nil)
+	if code != 200 {
+		t.Fatalf("settings %d %v", code, out)
+	}
+	mmdb, _ := out["mmdb"].(map[string]any)
+	if mmdb["ok"] != true {
+		t.Fatalf("status %v", out)
+	}
+	// Saving a missing file is refused; a blank path clears it.
+	code, out = call(t, integMux(), "POST", "/api/analytics/settings", map[string]any{"mmdb_path": filepath.Join(t.TempDir(), "nope.mmdb")})
+	if code == 200 {
+		t.Fatalf("accepted missing mmdb: %v", out)
+	}
+}
+
+func TestBeaconUsesMMDB(t *testing.T) {
+	isolate(t)
+	path := testCityMMDB(t)
+	_ = withConfig(func(c *Config) error {
+		c.Sites = []*Site{{Slug: "shop", Name: "Shop"}}
+		c.Analytics = &AnalyticsSettings{Enabled: true, BotFilter: true, RetentionDays: 90, MMDBPath: path}
+		return nil
+	})
+	req := httptest.NewRequest("GET", "/__rover/e?site=shop&p=/menu", nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 Chrome/120.0.0.0")
+	req.Header.Set("X-Forwarded-For", "8.8.8.8")
+	rec := httptest.NewRecorder()
+	integMux().ServeHTTP(rec, req)
+	if rec.Code != 204 {
+		t.Fatalf("beacon %d", rec.Code)
+	}
+	// summary should include the city
+	_, sum := call(t, integMux(), "GET", "/api/analytics/shop?days=7", nil)
+	// country list
+	raw, _ := json.Marshal(sum)
+	if !strings.Contains(string(raw), "US") {
+		t.Fatalf("expected US in summary: %s", raw)
+	}
+	if cities, _ := sum["cities"].([]any); len(cities) == 0 {
+		t.Fatalf("expected city row: %s", raw)
+	} else {
+		row, _ := cities[0].(map[string]any)
+		if fmt.Sprint(row["name"]) != "Mountain View" {
+			t.Fatalf("city %v", cities)
+		}
 	}
 }

@@ -163,8 +163,10 @@ charges about $0.01 per request, so Rover refuses the call until you confirm.
 - **Credentials:** none.
 - A tiny beacon (`/__rover/r.js`) and/or nginx access-log ingest. Metrics:
   visitors, pageviews, estimated uniques (daily salted hash, no cookies),
-  country (Cloudflare `CF-IPCountry` or an optional MMDB you provide — MaxMind
-  does not allow Rover to bundle GeoLite), region/city when the log provides
+  country (Cloudflare `CF-IPCountry` or an optional MaxMind-format city database
+  you provide, such as DB-IP City Lite, CC-BY — Rover does not bundle GeoLite;
+  the reader is pure Go so CGO stays off), region/city from that database or
+  when the log provides
   them, devices, browsers, referrers, top pages, bandwidth, engagement,
   4xx/5xx, bot filtering. Retention is configurable (default 90 days). Raw IPs
   are not stored.

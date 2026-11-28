@@ -136,8 +136,25 @@ route(/^\/analytics(?:\/([a-z0-9-]+))?$/, async (slug) => {
       <div class="card"><h2>Referrers</h2>${list(sum.referrers)}</div>
       <div class="card"><h2>Engagement</h2><p>Average time to interactive (beacon): <b>${sum.engagement_ms_avg||0} ms</b>. Bots filtered: ${sum.bots_filtered||0}.</p></div>
     </div>
+    <div class="card" id="geoCard" style="margin-top:16px">
+      <h2>Geolocation database (optional)</h2>
+      <p class="muted small">Rover does not bundle GeoLite or any city database. If you have a MaxMind-format <code>.mmdb</code> you are allowed to use (for example <a href="https://db-ip.com/db/lite.php" target="_blank" rel="noopener">DB-IP City Lite</a>, CC-BY), point Rover at the file on this PC. Country can also come from Cloudflare's <code>CF-IPCountry</code> header.</p>
+      <div class="field"><label>Path to .mmdb</label><input id="mmdbPath" placeholder="C:\Geo\dbip-city-lite.mmdb"></div>
+      <p class="small muted" id="mmdbStatus"></p>
+      <button class="sm" id="mmdbSave">Save path</button>
+    </div>
     <div id="gReports"><p class="small muted">Loading Google reports…</p></div>
     <p class="small muted">Optional Google Analytics, Search Console and AdSense reports use read-only official APIs. Connect the accounts in the Integration Centre (and assign them to the project if you have more than one). Add this snippet to a site (or let Rover's nginx include it): <code>&lt;script src="/__rover/r.js" defer&gt;&lt;/script&gt;</code></p>`;
+  try {
+    const st = await api("GET", "/api/analytics/settings");
+    if ($("#mmdbPath")) $("#mmdbPath").value = (st.settings && st.settings.mmdb_path) || "";
+    if ($("#mmdbStatus") && st.mmdb) $("#mmdbStatus").textContent = st.mmdb.ok ? ("Loaded: " + (st.mmdb.type || "MaxMind DB") + (st.mmdb.built ? " (built " + st.mmdb.built + ")" : "")) : (st.mmdb.error || st.mmdb.note || "");
+    if ($("#mmdbSave")) $("#mmdbSave").onclick = () => busy($("#mmdbSave"), async () => {
+      const r = await api("POST", "/api/analytics/settings", { mmdb_path: $("#mmdbPath").value });
+      toast(r.mmdb && r.mmdb.ok ? "Database opened" : "Path saved", "success");
+      rerender();
+    });
+  } catch (e) {}
   try {
     const g = await api("GET", `/api/analytics/${encodeURIComponent(slug)}/google?days=28`);
     const box = $("#gReports");
