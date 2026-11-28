@@ -169,3 +169,7 @@ a{text-underline-offset:2px;text-decoration-thickness:1px}
 .cards.four .stat{font-size:1.6rem;font-weight:650}
 @media (max-width:900px){.cards.four{grid-template-columns:1fr 1fr}}
 
+.table.wrap{overflow:auto}
+.table.wrap table{width:100%;border-collapse:collapse;font-size:13px}
+.table.wrap th,.table.wrap td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line, rgba(127,127,127,.2));font-variant-numeric:tabular-nums}
+.table.wrap th{color:var(--faint);font-weight:600}

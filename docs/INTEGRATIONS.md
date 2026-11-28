@@ -138,19 +138,25 @@ charges about $0.01 per request, so Rover refuses the call until you confirm.
 - **Capabilities:** analytics (Data API `runReport`, Admin account summaries).
 - **Credentials:** Sign in with Google (loopback + PKCE) or a service account
   added to the property. Scope: `analytics.readonly` only.
-- **Needs live credentials.**
+- **Needs live credentials** for a live `runReport`. The Analytics page proxies
+  `properties/{id}:runReport` (activeUsers, sessions, screenPageViews by date)
+  through `/api/analytics/{slug}/google`. Assign the account (or a property ID)
+  on the project if you have more than one.
 
 ### Google Search Console
 - **Capabilities:** analytics / SEO (`sites` + `searchAnalytics.query`).
 - **Scope:** `webmasters.readonly` only.
 - **Needs live credentials.** A service account must be added as a user in
-  Search Console.
+  Search Console. Rover proxies `searchAnalytics.query` (top queries and pages)
+  through `/api/analytics/{slug}/google`.
 
 ### Google AdSense
 - **Capabilities:** revenue reports (read-only). Rover never changes
   settings or payments.
 - **Scope:** `adsense.readonly` only.
-- **Needs live credentials.**
+- **Needs live credentials.** Rover proxies `accounts/{id}/reports:generate`
+  (estimated earnings, impressions, clicks by date) through
+  `/api/analytics/{slug}/google`. Rover never changes AdSense settings or payments.
 
 ### Rover Analytics (first-party)
 - **Capabilities:** analytics, built in.

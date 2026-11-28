@@ -136,8 +136,39 @@ route(/^\/analytics(?:\/([a-z0-9-]+))?$/, async (slug) => {
       <div class="card"><h2>Referrers</h2>${list(sum.referrers)}</div>
       <div class="card"><h2>Engagement</h2><p>Average time to interactive (beacon): <b>${sum.engagement_ms_avg||0} ms</b>. Bots filtered: ${sum.bots_filtered||0}.</p></div>
     </div>
-    <p class="small muted">Optional Google Analytics, Search Console and AdSense reports appear here when you assign those accounts to the project in the Integration Centre. Add this snippet to a site (or let Rover's nginx include it): <code>&lt;script src="/__rover/r.js" defer&gt;&lt;/script&gt;</code></p>`;
+    <div id="gReports"><p class="small muted">Loading Google reports…</p></div>
+    <p class="small muted">Optional Google Analytics, Search Console and AdSense reports use read-only official APIs. Connect the accounts in the Integration Centre (and assign them to the project if you have more than one). Add this snippet to a site (or let Rover's nginx include it): <code>&lt;script src="/__rover/r.js" defer&gt;&lt;/script&gt;</code></p>`;
+  try {
+    const g = await api("GET", `/api/analytics/${encodeURIComponent(slug)}/google?days=28`);
+    const box = $("#gReports");
+    if (box) box.innerHTML = renderGoogleReports(g);
+  } catch (e) {
+    const box = $("#gReports");
+    if (box) box.innerHTML = `<p class="muted small">Google reports could not be loaded: ${esc(e.message || e)}</p>`;
+  }
 });
+
+function renderGoogleReports(g) {
+  if (!g) return "";
+  const table = (title, block) => {
+    if (!block) return "";
+    if (block.error) return `<div class="card"><h2>${esc(title)}</h2><p class="muted small">${esc(block.error)}</p></div>`;
+    const t = block.table || {};
+    const headers = t.headers || [];
+    const rows = t.rows || [];
+    if (!rows.length) return `<div class="card"><h2>${esc(title)}</h2><p class="muted small">No rows in this period${block.property || block.site || block.account ? " (" + esc(block.property || block.site || block.account) + ")" : ""}.</p></div>`;
+    const head = `<tr>${headers.map(h => `<th>${esc(h)}</th>`).join("")}</tr>`;
+    const body = rows.slice(0, 15).map(r => `<tr>${(r || []).map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("");
+    return `<div class="card"><h2>${esc(title)}</h2><div class="table wrap"><table>${head}${body}</table></div></div>`;
+  };
+  const parts = [
+    table("Google Analytics", g.ga4),
+    table("Search Console", g.search_console),
+    table("AdSense", g.adsense)
+  ].filter(Boolean).join("");
+  if (!parts) return "";
+  return `<div class="grid2" style="margin-top:16px">${parts}</div>`;
+}
 
 function fmtBytes(n) {
   if (n < 1024) return n + " B";

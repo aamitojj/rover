@@ -414,3 +414,84 @@ func ptrCfg() *Config {
 	c := snapshotConfig()
 	return &c
 }
+
+func TestGoogleReportsProxy(t *testing.T) {
+	isolate(t)
+	var ga4Path, gscPath, adsPath string
+	var leaked bool
+	ga4 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ga4Path = r.URL.Path
+		if strings.Contains(r.Header.Get("Authorization"), "secret") {
+			leaked = true
+		}
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"dimensionHeaders":[{"name":"date"}],"metricHeaders":[{"name":"activeUsers"}],"rows":[{"dimensionValues":[{"value":"20261101"}],"metricValues":[{"value":"12"}]}]}`)
+	}))
+	gsc := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gscPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"rows":[{"keys":["bread","https://shop.com/"],"clicks":3,"impressions":20,"ctr":0.15,"position":2}]}`)
+	}))
+	ads := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		adsPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"headers":[{"name":"DATE"},{"name":"ESTIMATED_EARNINGS"}],"rows":[{"cells":[{"value":"2026-11-01"},{"value":"4.50"}]}]}`)
+	}))
+	t.Cleanup(ga4.Close)
+	t.Cleanup(gsc.Close)
+	t.Cleanup(ads.Close)
+	old := integTransport
+	integTransport = func() *prov.Transport {
+		return &prov.Transport{Base: map[string]string{"ga4-data": ga4.URL, "gsc": gsc.URL, "adsense": ads.URL}}
+	}
+	t.Cleanup(func() { integTransport = old })
+
+	gaCred, _ := protectString(`{"access_token":"ya29.ga4-secret","property_id":"properties/111"}`)
+	scCred, _ := protectString(`{"access_token":"ya29.gsc-secret","site_url":"https://shop.com/"}`)
+	adCred, _ := protectString(`{"access_token":"ya29.ads-secret","account":"accounts/pub-1"}`)
+	_ = withConfig(func(c *Config) error {
+		c.Sites = []*Site{{Slug: "shop", Name: "Shop", Domain: "shop.com", Services: map[string]string{"analytics": "int_ga4", "seo": "int_gsc", "revenue": "int_ads"}}}
+		c.Integrations = []*Integration{
+			{ID: "int_ga4", Provider: "ga4", Nickname: "GA4", Cred: gaCred, Status: "connected", Who: "Shop property"},
+			{ID: "int_gsc", Provider: "search-console", Nickname: "GSC", Cred: scCred, Status: "connected"},
+			{ID: "int_ads", Provider: "adsense", Nickname: "AdSense", Cred: adCred, Status: "connected"},
+		}
+		return nil
+	})
+	code, out := call(t, integMux(), "GET", "/api/analytics/shop/google?days=28", nil)
+	if code != 200 {
+		t.Fatalf("status %d %v", code, out)
+	}
+	raw, _ := json.Marshal(out)
+	if strings.Contains(string(raw), "ya29") || strings.Contains(string(raw), "-secret") {
+		t.Fatalf("token leaked: %s", raw)
+	}
+	_ = leaked
+	if ga4Path != "/v1beta/properties/111:runReport" {
+		t.Fatalf("ga4 path %s", ga4Path)
+	}
+	if !strings.Contains(gscPath, "searchAnalytics/query") {
+		t.Fatalf("gsc path %s", gscPath)
+	}
+	if !strings.Contains(adsPath, "/reports:generate") {
+		t.Fatalf("ads path %s", adsPath)
+	}
+	m := out
+	ga4out, _ := m["ga4"].(map[string]any)
+	if ga4out["connected"] != true {
+		t.Fatalf("ga4 %v (type %T) full=%s", out, out, raw)
+	}
+	table, _ := ga4out["table"].(map[string]any)
+	rows, _ := table["rows"].([]any)
+	if len(rows) != 1 {
+		t.Fatalf("ga4 rows %v", table)
+	}
+	gscOut, _ := m["search_console"].(map[string]any)
+	if gscOut["connected"] != true {
+		t.Fatalf("gsc %v", gscOut)
+	}
+	adsOut, _ := m["adsense"].(map[string]any)
+	if adsOut["connected"] != true {
+		t.Fatalf("adsense %v", adsOut)
+	}
+}
