@@ -7,6 +7,7 @@ package main
 
 import (
 	"archive/zip"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -29,6 +30,11 @@ type BackupSettings struct {
 	LastFile       string `json:"last_file,omitempty"`
 	LastSize       int64  `json:"last_size,omitempty"`
 	LastError      string `json:"last_error,omitempty"`
+	// v0.9 optional cloud destination.
+	Destination   string `json:"destination,omitempty"` // local | s3 | supabase
+	IntegrationID string `json:"integration_id,omitempty"`
+	Bucket        string `json:"bucket,omitempty"`
+	Prefix        string `json:"prefix,omitempty"`
 }
 
 func backupSettings(c *Config) BackupSettings {
@@ -196,6 +202,14 @@ func listBackups(dir string) []map[string]any {
 func runBackup(now time.Time) (string, error) {
 	c := snapshotConfig()
 	p, size, err := backupNow(&c, now)
+	if err == nil && p != "" {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		upErr := uploadBackupCloud(ctx, &c, p)
+		cancel()
+		if upErr != nil {
+			err = fmt.Errorf("local backup saved, but the cloud copy failed: %w", upErr)
+		}
+	}
 	_ = withConfig(func(c *Config) error {
 		b := backupSettings(c)
 		if err != nil {
