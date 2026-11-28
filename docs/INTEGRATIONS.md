@@ -212,3 +212,16 @@ See the per-provider notes above. In short: a real Oracle/Ubuntu/Debian VM
 for the first nginx-direct public URL and certbot; real API tokens for a
 final click-through of each cloud account; a real Google OAuth client for
 Sign-In; a second PC for sync. Mocks cover the official HTTP shapes in CI.
+
+## Alerts (email and webhook)
+
+Monitoring can flash the Rover window, show an in-app notice, POST a JSON body
+to an **https** webhook (or `http://127.0.0.1` for a local receiver), and/or
+send mail through **your** SMTP server.
+
+SMTP settings (host, port, username, From, To, STARTTLS / TLS / none) live in
+Monitoring → Alerts. The password is stored with DPAPI on Windows (or a
+user-only file on the Linux development build) and is never returned to the UI.
+Unencrypted SMTP (`none`) is allowed only to 127.0.0.1 or localhost.
+
+Rover never creates a mailbox or signs up for a mail service for you.
