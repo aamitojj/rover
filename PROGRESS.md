@@ -22,6 +22,10 @@ Commits from this implementation (newest last). Each URL is `https://github.com/
 | `05b359d12bf703dbb15a63313a45f26c6f75a922` | https://github.com/aamitojj/rover/commit/05b359d12bf703dbb15a63313a45f26c6f75a922 | `docs/INTEGRATIONS.md`, README “New in 0.9”, RESEARCH notes |
 | `3f3898e0f80017eff3cffcc1f4da54212faf21c4` | https://github.com/aamitojj/rover/commit/3f3898e0f80017eff3cffcc1f4da54212faf21c4 | First PROGRESS.md log (test status; CI not yet run) |
 | `abef9e0c1ec1dc0841ea495d6f51fd43bba12c65` | https://github.com/aamitojj/rover/commit/abef9e0c1ec1dc0841ea495d6f51fd43bba12c65 | Run `build.yml` on this feature branch; default Windows artifacts to 0.9.0. Offline + publish jobs stay tag-only. |
+| `92236af8e7810119e9de91e117bbe9d8c3b9fb29` | https://github.com/aamitojj/rover/commit/92236af8e7810119e9de91e117bbe9d8c3b9fb29 | Progress log with first green CI, SHA256 sums, screenshots; Integrations nav icon uses `plug` |
+| `d66b584edb21a94814dd2c5f0c7c0f68e931f42c` | https://github.com/aamitojj/rover/commit/d66b584edb21a94814dd2c5f0c7c0f68e931f42c | Firestore REST helpers (`ToFirestoreFields`, `WriteSyncDocument`) and unit tests |
+| `337f53c6388e2172c07bb346eab0b8457d0416ef` | https://github.com/aamitojj/rover/commit/337f53c6388e2172c07bb346eab0b8457d0416ef | Firebase metadata sync writes to `rover_sync/{device}` via official REST; secrets refused; mocked `/api/sync/now` test; INTEGRATIONS.md |
+
 
 A follow-up commit on this same branch updates this log with CI results, screenshot paths, SHA256 sums, and a nav-icon fix (`integrations` uses the existing `plug` glyph because `blocks` is not in `web/icons.js`).
 
@@ -30,7 +34,7 @@ A follow-up commit on this same branch updates this log with CI results, screens
 - `gofmt -l .` clean
 - `go vet ./...` and `GOOS=windows go vet ./...` clean
 - `node --check web/*.js` clean
-- `go test -count=1 ./...` pass — **151** tests, 0 fail (`hostpanel` + `hostpanel/prov`)
+- `go test -count=1 ./...` pass — **154** tests, 0 fail (`hostpanel` + `hostpanel/prov`) after Firebase sync write (was 151)
 - `go test -race -count=1 ./...` pass
 - Linux `go build` and `GOOS=windows GOARCH=amd64 go build` succeed
 
@@ -48,6 +52,12 @@ A follow-up commit on this same branch updates this log with CI results, screens
   - `Rover-Setup-0.9.0.exe` (6,515,679 bytes) SHA256: `23feb5461682e5ad14abbd4148920b6ea2c88cb51ff306d8a367be71467006f0`
 
 A later push of this log will start another Actions run; the green verification run above is the implementation tip `abef9e0`.
+
+
+### Item 1 — Firebase metadata sync write (28 Nov 2026, Asia/Calcutta)
+
+- Local: gofmt, `go vet` (linux + windows), `go test -race`, Linux and Windows builds all passed (**154** tests).
+- CI: recorded after this log is pushed. Implementation tip is `337f53c`.
 
 ### Screenshots and source zip
 
@@ -86,7 +96,7 @@ A later push of this log will start another Actions run; the green verification 
 - [x] Google Sign-In loopback + PKCE; user must create the Desktop OAuth client
 - [x] Optional metadata sync; payload refused if it looks like it contains secrets
 - [x] SSH keys and tokens never sync
-- [ ] Firebase sync write (documented later step)
+- [x] Firebase sync write via official Firestore REST (`rover_sync/{device}`), secrets refused, httptest mocks
 - [ ] Two-device live sync test after `cloud/schema.sql` is applied
 
 ### 5. Analytics
@@ -134,4 +144,4 @@ A later push of this log will start another Actions run; the green verification 
 
 ## Honest leftover (do not claim gates pass)
 
-Still open: live nginx/certbot on a public VPS; live tokens for each cloud; Firebase sync write; optional MMDB; email alerts; full Google report proxy. Those live gates have **not** been claimed. CI, local tests, screenshots and the source zip are done. Do not tag or publish until the user says so.
+Still open: live nginx/certbot on a public VPS; live tokens for each cloud (including a two-device Firebase sync); optional MMDB; email alerts; full Google report proxy. Those live gates have **not** been claimed. Do not tag or publish until the user says so.
