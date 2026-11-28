@@ -31,6 +31,9 @@ Commits from this implementation (newest last). Each URL is `https://github.com/
 | `713b279383d6c6aa8f261ce055a0d2277a2edde6` | https://github.com/aamitojj/rover/commit/713b279383d6c6aa8f261ce055a0d2277a2edde6 | Progress log for Google report proxy and Firebase CI |
 | `35eed7fcd615a321efe57f2e5c21f1ea4ffe867b` | https://github.com/aamitojj/rover/commit/35eed7fcd615a321efe57f2e5c21f1ea4ffe867b | SMTP email alerts (DPAPI-stored password), webhook tests, Monitoring UI |
 | `4f2c50a90a56174ad31a1fa11c29d5bed6822631` | https://github.com/aamitojj/rover/commit/4f2c50a90a56174ad31a1fa11c29d5bed6822631 | Document SMTP and https webhook alerts |
+| `74709cd43a2ed5e0444e1c305aa55b75ccb20b80` | https://github.com/aamitojj/rover/commit/74709cd43a2ed5e0444e1c305aa55b75ccb20b80 | Progress log for SMTP alerts and Google report CI |
+| `e0bb4a5853cd9dd4de49397858bf68d7214f8a33` | https://github.com/aamitojj/rover/commit/e0bb4a5853cd9dd4de49397858bf68d7214f8a33 | Optional MMDB city/region lookup via pure-Go `maxminddb-golang` (CGO off) |
+| `cfe51b3dffd5507a7fb90fa375dc90268e5801f3` | https://github.com/aamitojj/rover/commit/cfe51b3dffd5507a7fb90fa375dc90268e5801f3 | MMDB tests, Analytics path settings, DB-IP Lite notes, test fixture |
 
 
 A follow-up commit on this same branch updates this log with CI results, screenshot paths, SHA256 sums, and a nav-icon fix (`integrations` uses the existing `plug` glyph because `blocks` is not in `web/icons.js`).
@@ -40,7 +43,7 @@ A follow-up commit on this same branch updates this log with CI results, screens
 - `gofmt -l .` clean
 - `go vet ./...` and `GOOS=windows go vet ./...` clean
 - `node --check web/*.js` clean
-- `go test -count=1 ./...` pass — **158** tests, 0 fail (`hostpanel` + `hostpanel/prov`) after SMTP/webhook alerts (was 156 after Google reports)
+- `go test -count=1 ./...` pass — **160** tests, 0 fail (`hostpanel` + `hostpanel/prov`) after optional MMDB lookup (was 158 after SMTP alerts)
 - `go test -race -count=1 ./...` pass
 - Linux `go build` and `GOOS=windows GOARCH=amd64 go build` succeed
 
@@ -87,7 +90,18 @@ A later push of this log will start another Actions run; the green verification 
 
 - Local: gofmt, `go vet` (linux + windows), `go test -race`, Linux and Windows builds all passed (**158** tests).
 - Monitoring screenshot refreshed: `/workspace/rover-shots-v09/05-monitoring.png` (full page, SMTP fields).
-- CI: recorded after this log is pushed. Implementation tip is `4f2c50a` (code in `35eed7f`).
+- CI (head `74709cd`, includes the log): **success** — https://github.com/aamitojj/rover/actions/runs/46110648130
+  - Started 10:37:23 AM IST, finished 10:38:49 AM IST (28 Nov 2026, Asia/Calcutta)
+  - Artifact `rover-0.9.0` id `15248638884` — https://github.com/aamitojj/rover/actions/runs/46110648130#artifacts
+  - archive digest `sha256:d37bf5b16078fa72529a629fdb0d11e05ca1f2b983afe58ed505376752dce7ee`
+- Also green: `35eed7f` (https://github.com/aamitojj/rover/actions/runs/46110615298) and `4f2c50a` (https://github.com/aamitojj/rover/actions/runs/46110624367). Offline/publish skipped.
+
+### Item 4 — Optional MMDB city/region lookup (28 Nov 2026, Asia/Calcutta)
+
+- Local: gofmt, `go vet` (linux + windows), `go test -race`, `CGO_ENABLED=0` Linux and Windows builds all passed (**160** tests).
+- Reader: `github.com/oschwald/maxminddb-golang` v1.13.1 (pure Go, no CGO). User supplies the file (e.g. DB-IP City Lite, CC-BY). Nothing is bundled.
+- Analytics screenshot refreshed: `/workspace/rover-shots-v09/04-analytics.png` (geolocation path card).
+- CI: recorded after this log is pushed. Implementation tip is `cfe51b3` (code in `e0bb4a5`).
 
 ### Screenshots and source zip
 
@@ -133,7 +147,7 @@ A later push of this log will start another Actions run; the green verification 
 - [x] First-party beacon `/__rover/r.js` and nginx combined-log ingest
 - [x] Visitors, pageviews, daily-salt uniques (no cookies, no raw IPs), CF-IPCountry, devices, browsers, referrers, top pages, bandwidth, engagement, 4xx/5xx, bot filter
 - [x] Optional GA4 / Search Console / AdSense catalog entries and Data API helpers
-- [ ] Optional user-provided MMDB (country today is CF header or documented gap)
+- [x] Optional user-provided MaxMind-format MMDB (city/region/country); CF header remains the fallback; no database is bundled
 - [x] `/api/analytics/{slug}/google` proxies `GA4RunReport`, `GSCQuery` and `AdSenseReport` (httptest mocks); tables shown on the Analytics page. Live credentials still needed for real numbers.
 
 ### 6. Monitoring
@@ -174,4 +188,4 @@ A later push of this log will start another Actions run; the green verification 
 
 ## Honest leftover (do not claim gates pass)
 
-Still open: live nginx/certbot on a public VPS; live tokens for each cloud (including a two-device Firebase sync, live GA/GSC/AdSense numbers, and a real SMTP send); optional MMDB. Email/webhook alerting is implemented and mocked; it has not been click-tested against a real mailbox. Do not tag or publish until the user says so.
+Still open (live credentials / infrastructure only): live nginx/certbot on a public VPS; live tokens for each cloud (two-device Firebase sync, live GA/GSC/AdSense numbers, a real SMTP send, and a user-supplied MMDB file). All four code leftovers are implemented and mocked. Do not tag or publish until the user says so.
