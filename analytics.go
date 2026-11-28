@@ -467,37 +467,3 @@ func ingestAccessLog(site, text string, dropBots bool) (int, error) {
 	}
 	return n, nil
 }
-
-func apiAnalyticsGoogle(w http.ResponseWriter, r *http.Request) {
-	slug := r.PathValue("slug")
-	c := snapshotConfig()
-	s := findSite(&c, slug)
-	if s == nil {
-		writeErr(w, fmt.Errorf("unknown project"))
-		return
-	}
-	out := map[string]any{}
-	kind := r.URL.Query().Get("source") // ga4 | search-console | adsense
-	id := ""
-	if s.Services != nil {
-		id = s.Services["analytics"]
-		if kind == "search-console" {
-			id = firstNonEmpty(s.Services["seo"], id)
-		}
-		if kind == "adsense" {
-			id = firstNonEmpty(s.Services["revenue"], id)
-		}
-	}
-	if id == "" {
-		writeJSON(w, 200, map[string]any{"unsupported": false, "connected": false, "error": "assign a Google Analytics, Search Console or AdSense account to this project in the Integration Centre"})
-		return
-	}
-	a := findIntegration(&c, id)
-	if a == nil {
-		writeErr(w, fmt.Errorf("unknown account"))
-		return
-	}
-	_ = kind
-	_ = out
-	writeJSON(w, 200, map[string]any{"connected": true, "provider": a.Provider, "who": a.Who, "note": "Reports are fetched with the official read-only APIs. Live numbers need a successful test of that account."})
-}

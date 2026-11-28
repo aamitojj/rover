@@ -368,3 +368,63 @@ func TestWriteSyncDocumentMock(t *testing.T) {
 		t.Fatal("wanted invalid id")
 	}
 }
+
+func TestGA4GSCAdSenseReports(t *testing.T) {
+	var ga4Path, gscPath, adsensePath, ga4Auth string
+	ga4 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ga4Path, ga4Auth = r.URL.Path, r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"dimensionHeaders":[{"name":"date"}],"metricHeaders":[{"name":"activeUsers"}],"rows":[{"dimensionValues":[{"value":"20261101"}],"metricValues":[{"value":"12"}]}]}`)
+	}))
+	gsc := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gscPath = r.URL.RequestURI()
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"rows":[{"keys":["bakery","https://sweetcrumbs.in/"],"clicks":3,"impressions":40,"ctr":0.075,"position":4.2}]}`)
+	}))
+	ads := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		adsensePath = r.URL.Path + "?" + r.URL.RawQuery
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"headers":[{"name":"DATE"},{"name":"ESTIMATED_EARNINGS"}],"rows":[{"cells":[{"value":"2026-11-01"},{"value":"1.23"}]}]}`)
+	}))
+	t.Cleanup(ga4.Close)
+	t.Cleanup(gsc.Close)
+	t.Cleanup(ads.Close)
+	tr := &Transport{Base: map[string]string{"ga4-data": ga4.URL, "gsc": gsc.URL, "adsense": ads.URL}}
+	cr := map[string]string{"access_token": "ya29.report-demo"}
+	rep, err := GA4RunReport(context.Background(), tr, cr, "123456789", "2026-11-01", "2026-11-28")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ga4Path != "/v1beta/properties/123456789:runReport" || ga4Auth != "Bearer ya29.report-demo" {
+		t.Fatalf("ga4 path/auth %s %s", ga4Path, ga4Auth)
+	}
+	if _, ok := rep["rows"]; !ok {
+		t.Fatalf("ga4 body %v", rep)
+	}
+	rep, err = GSCQuery(context.Background(), tr, cr, "https://sweetcrumbs.in/", "2026-11-01", "2026-11-28")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(gscPath, "/webmasters/v3/sites/") || !strings.Contains(gscPath, "searchAnalytics/query") {
+		t.Fatalf("gsc path %s", gscPath)
+	}
+	if !strings.Contains(gscPath, "https:%2F%2Fsweetcrumbs.in") && !strings.Contains(gscPath, "https%3A%2F%2Fsweetcrumbs.in") {
+		t.Fatalf("site URL not encoded in path: %s", gscPath)
+	}
+	if _, ok := rep["rows"]; !ok {
+		t.Fatalf("gsc body %v", rep)
+	}
+	rep, err = AdSenseReport(context.Background(), tr, cr, "pub-123", "2026-11-01", "2026-11-28")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(adsensePath, "/v2/accounts/pub-123/reports:generate") || !strings.Contains(adsensePath, "startDate.year=2026") || !strings.Contains(adsensePath, "metrics=ESTIMATED_EARNINGS") {
+		t.Fatalf("adsense %s", adsensePath)
+	}
+	if _, ok := rep["rows"]; !ok {
+		t.Fatalf("adsense body %v", rep)
+	}
+	if _, err := AdSenseReport(context.Background(), tr, cr, "pub-123", "bad", "2026-11-28"); err == nil {
+		t.Fatal("wanted bad date")
+	}
+}

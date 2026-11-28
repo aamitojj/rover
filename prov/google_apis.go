@@ -112,6 +112,7 @@ func (gscProv) Meta() Meta {
 		Fields: []Field{
 			{Key: "access_token", Label: "OAuth access token", Secret: true, Optional: true},
 			{Key: "json", Label: "Or a service account JSON", Secret: true, Multiline: true, Optional: true, Hint: "The service account must be added as a user in Search Console"},
+			{Key: "site_url", Label: "Site URL (optional)", Optional: true, Placeholder: "https://example.com/", Hint: "Or sc-domain:example.com. Leave blank to use the project's domain."},
 		},
 		Scopes: []string{"webmasters.readonly only."},
 	}
@@ -151,7 +152,7 @@ func GSCQuery(ctx context.Context, tr *Transport, creds map[string]string, siteU
 	base := tr.BaseURL("gsc", "https://searchconsole.googleapis.com")
 	var out map[string]any
 	body := map[string]any{"startDate": start, "endDate": end, "dimensions": []string{"query", "page"}, "rowLimit": 25}
-	u := base + "/webmasters/v3/sites/" + url.PathEscape(siteURL) + "/searchAnalytics/query"
+	u := base + "/webmasters/v3/sites/" + url.QueryEscape(siteURL) + "/searchAnalytics/query"
 	if err := tr.DoJSON(ctx, "POST", u, hdr, body, &out); err != nil {
 		return nil, err
 	}
@@ -168,6 +169,7 @@ func (adsenseProv) Meta() Meta {
 		Fields: []Field{
 			{Key: "access_token", Label: "OAuth access token", Secret: true, Optional: true},
 			{Key: "json", Label: "Or a service account JSON", Secret: true, Multiline: true, Optional: true},
+			{Key: "account", Label: "AdSense account ID (optional)", Optional: true, Placeholder: "accounts/pub-…"},
 		},
 		Scopes: []string{"adsense.readonly only. Rover never changes AdSense settings or payments."},
 		Notes:  "Reports estimated earnings and impressions. AdSense has no write actions in Rover.",
@@ -209,9 +211,14 @@ func AdSenseReport(ctx context.Context, tr *Transport, creds map[string]string, 
 	if !strings.HasPrefix(account, "accounts/") {
 		account = "accounts/" + account
 	}
+	sy, sm, sd, ok1 := ymdParts(start)
+	ey, em, ed, ok2 := ymdParts(end)
+	if !ok1 || !ok2 {
+		return nil, fmt.Errorf("dates must be YYYY-MM-DD")
+	}
 	base := tr.BaseURL("adsense", "https://adsense.googleapis.com")
 	u := fmt.Sprintf("%s/v2/%s/reports:generate?dateRange=CUSTOM&startDate.year=%s&startDate.month=%s&startDate.day=%s&endDate.year=%s&endDate.month=%s&endDate.day=%s&metrics=ESTIMATED_EARNINGS&metrics=IMPRESSIONS&metrics=CLICKS&dimensions=DATE",
-		base, account, start[:4], start[5:7], start[8:10], end[:4], end[5:7], end[8:10])
+		base, account, sy, sm, sd, ey, em, ed)
 	var out map[string]any
 	if err := tr.DoJSON(ctx, "GET", u, hdr, nil, &out); err != nil {
 		return nil, err
@@ -231,4 +238,11 @@ func (roverAnalyticsProv) Meta() Meta {
 
 func (roverAnalyticsProv) Test(ctx context.Context, tr *Transport, creds map[string]string) (*Info, error) {
 	return &Info{Status: StatusConnected, Health: "ok", Who: "first-party analytics on this PC"}, nil
+}
+
+func ymdParts(s string) (y, m, d string, ok bool) {
+	if len(s) < 10 || s[4] != '-' || s[7] != '-' {
+		return "", "", "", false
+	}
+	return s[:4], s[5:7], s[8:10], true
 }
