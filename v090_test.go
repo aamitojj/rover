@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -358,3 +359,58 @@ func TestUnsupportedCostIsMarked(t *testing.T) {
 }
 
 var _ = context.Background
+
+func TestFirebaseSyncWrite(t *testing.T) {
+	isolate(t)
+	var gotPath, gotAuth, gotBody, gotMethod string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath, gotAuth = r.Method, r.URL.Path, r.Header.Get("Authorization")
+		b, _ := io.ReadAll(r.Body)
+		gotBody = string(b)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"name":"ok"}`))
+	}))
+	t.Cleanup(srv.Close)
+	old := integTransport
+	integTransport = func() *prov.Transport { return &prov.Transport{Base: map[string]string{"firestore": srv.URL}} }
+	t.Cleanup(func() { integTransport = old })
+
+	cred, _ := protectString(`{"access_token":"ya29.sync-demo","project_id":"rover-sync-demo"}`)
+	_ = withConfig(func(c *Config) error {
+		c.ManagedKey = "plain:-----BEGIN PRIVATE KEY-----\nMII\n-----END PRIVATE KEY-----"
+		c.CoolifyToken = "plain:never-upload-this"
+		c.Sites = []*Site{{Slug: "shop", Name: "Shop", Domain: "shop.com", Engine: "nginx", LastDeploy: "1", Release: "r1"}}
+		c.Integrations = []*Integration{{ID: "int_fb", Provider: "firebase", Nickname: "FB", Cred: cred, Status: "connected"}}
+		c.CloudSync = &SyncSettings{Enabled: true, Provider: "firebase", IntegrationID: "int_fb", DeviceID: "dev_test"}
+		return nil
+	})
+	_, out := call(t, integMux(), "POST", "/api/sync/now", nil)
+	if gotMethod != "PATCH" {
+		t.Fatalf("method %s out=%v", gotMethod, out)
+	}
+	if gotPath != "/v1/projects/rover-sync-demo/databases/(default)/documents/rover_sync/dev_test" {
+		t.Fatalf("path %s", gotPath)
+	}
+	if gotAuth != "Bearer ya29.sync-demo" {
+		t.Fatalf("auth %s", gotAuth)
+	}
+	if !strings.Contains(gotBody, `"stringValue":"shop.com"`) || !strings.Contains(gotBody, `"stringValue":"dev_test"`) {
+		t.Fatalf("body %s", gotBody)
+	}
+	for _, bad := range []string{"PRIVATE KEY", "never-upload-this", "ya29.sync-demo", "managed_key", "coolify_token", `"cred"`} {
+		if strings.Contains(gotBody, bad) {
+			t.Fatalf("secret %q leaked in Firestore body: %s", bad, gotBody)
+		}
+	}
+
+	// Refuse a payload that looks like a key (direct call).
+	err := pushSync(context.Background(), ptrCfg(), []byte(`{"note":"-----BEGIN PRIVATE KEY-----"}`))
+	if err == nil || !strings.Contains(err.Error(), "secret") {
+		t.Fatalf("wanted secret refuse, got %v", err)
+	}
+}
+
+func ptrCfg() *Config {
+	c := snapshotConfig()
+	return &c
+}

@@ -69,6 +69,11 @@ charges about $0.01 per request, so Rover refuses the call until you confirm.
   viewer, Identity Toolkit, Storage object viewer. No write unless you later
   confirm a deploy.
 - **Needs live credentials.**
+- Sync: metadata is upserted with the official Firestore REST API
+  (`PATCH /v1/projects/{id}/databases/(default)/documents/rover_sync/{device}`).
+  Grant the service account permission to write that collection (Firestore
+  rules or IAM Datastore User). SSH keys and tokens are never included; the
+  write is refused if the payload looks like it contains a secret.
 
 ### Netlify
 - **Capabilities:** hosting (supported). Analytics is *unsupported* (paid add-on,
@@ -182,7 +187,12 @@ API tokens and other secrets stay on the device and remain DPAPI-encrypted.
 The sync is refused if the payload looks like it contains a key.
 
 Apply `cloud/schema.sql` in the destination Supabase project first (RLS is on).
-**Needs live credentials** (and a completed schema) for a two-device test.
+For Firebase, Rover upserts one document per device in the `rover_sync`
+collection of the `(default)` database. Give the service account write access
+to that collection (or Datastore User on the project).
+
+**Needs live credentials** (and a completed schema / Firestore rules) for a
+two-device test.
 
 ## Cloud backups
 

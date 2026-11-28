@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"hostpanel/prov"
 )
 
 type SyncSettings struct {
@@ -182,7 +184,19 @@ func pushSync(ctx context.Context, c *Config, body []byte) error {
 		}
 		return nil
 	case "firebase":
-		return errors.New("Firebase metadata sync writes to Firestore once a project id is assigned; apply the security rules in docs/INTEGRATIONS.md first — live write needs your confirmation in a later step")
+		project := strings.TrimSpace(cr["project_id"])
+		if project == "" {
+			project = prov.FirebaseProjectID(cr)
+		}
+		if project == "" {
+			return errors.New("the Firebase account needs a project ID to write sync documents")
+		}
+		device := strings.TrimSpace(c.CloudSync.DeviceID)
+		if device == "" {
+			device = "dev_unknown"
+		}
+		tr := integTransport()
+		return prov.WriteSyncDocument(ctx, tr, cr, project, device, body)
 	default:
 		return errors.New("unknown sync provider")
 	}
