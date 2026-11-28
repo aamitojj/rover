@@ -20,12 +20,12 @@ Commits from this implementation (newest last). Each URL is `https://github.com/
 | `56f84de80396d7739de0ff6bf4773505a1486c69` | https://github.com/aamitojj/rover/commit/56f84de80396d7739de0ff6bf4773505a1486c69 | Catalog wrap, `sbp_` redaction, config-migration tests bumped to v9 |
 | `46c85c3ce1a6130a8e6380da94a4f478ab2f349a` | https://github.com/aamitojj/rover/commit/46c85c3ce1a6130a8e6380da94a4f478ab2f349a | Integration Centre, Analytics and Monitoring UI |
 | `05b359d12bf703dbb15a63313a45f26c6f75a922` | https://github.com/aamitojj/rover/commit/05b359d12bf703dbb15a63313a45f26c6f75a922 | `docs/INTEGRATIONS.md`, README “New in 0.9”, RESEARCH notes |
+| `3f3898e0f80017eff3cffcc1f4da54212faf21c4` | https://github.com/aamitojj/rover/commit/3f3898e0f80017eff3cffcc1f4da54212faf21c4 | First PROGRESS.md log (test status; CI not yet run) |
+| `abef9e0c1ec1dc0841ea495d6f51fd43bba12c65` | https://github.com/aamitojj/rover/commit/abef9e0c1ec1dc0841ea495d6f51fd43bba12c65 | Run `build.yml` on this feature branch; default Windows artifacts to 0.9.0. Offline + publish jobs stay tag-only. |
 
-This log file is committed after those pushes. Its own SHA is recorded in the finish report (and in a follow-up line if a later push updates this file).
+A follow-up commit on this same branch updates this log with CI results, screenshot paths, SHA256 sums, and a nav-icon fix (`integrations` uses the existing `plug` glyph because `blocks` is not in `web/icons.js`).
 
-`build.yml` was not changed and was not pushed.
-
-### Test status (local, 2026-11-28, Asia/Calcutta)
+### Test status (local, 28 Nov 2026, Asia/Calcutta)
 
 - `gofmt -l .` clean
 - `go vet ./...` and `GOOS=windows go vet ./...` clean
@@ -34,9 +34,26 @@ This log file is committed after those pushes. Its own SHA is recorded in the fi
 - `go test -race -count=1 ./...` pass
 - Linux `go build` and `GOOS=windows GOARCH=amd64 go build` succeed
 
-### CI status
+### CI status (green)
 
-Not yet green at the time this log was first written. Actions should start on the branch after these commits; the run URL and artifact links will be added here once the workflow finishes.
+- Run: https://github.com/aamitojj/rover/actions/runs/46108749616
+- Head: `abef9e0c1ec1dc0841ea495d6f51fd43bba12c65`
+- Started 10:11:59 AM IST, finished 10:13:32 AM IST (28 Nov 2026, Asia/Calcutta)
+- `test` (ubuntu-latest): **success** — gofmt, go vet (linux + windows), `go test -race ./...`, `node --check` — https://github.com/aamitojj/rover/actions/runs/46108749616/job/140867314373
+- `windows` (windows-latest): **success** — `rover.exe` + `Rover-Setup-0.9.0.exe` — https://github.com/aamitojj/rover/actions/runs/46108749616/job/140867450782
+- `offline` and `publish`: **skipped** (tag / explicit release inputs only). No GitHub release was published.
+- Artifact: `rover-0.9.0` (id `15248631494`) — https://github.com/aamitojj/rover/actions/runs/46108749616#artifacts
+  - Artifact archive digest (GitHub): `sha256:2ffc648f6ca330ce18dc260fcd2e5c325d8f5a83d6a72118a3a6179ef87ee767`
+  - `rover.exe` (14,099,968 bytes) SHA256: `072adf08d3677637068cfca52a7e505220613342044a4380868c43c3631f4f5c`
+  - `Rover-Setup-0.9.0.exe` (6,515,679 bytes) SHA256: `23feb5461682e5ad14abbd4148920b6ea2c88cb51ff306d8a367be71467006f0`
+
+A later push of this log will start another Actions run; the green verification run above is the implementation tip `abef9e0`.
+
+### Screenshots and source zip
+
+- Headless Chromium shots (Linux build, 1440×900): `/workspace/rover-shots-v09/`
+  - `01-dashboard.png`, `02-projects.png`, `03-integrations.png`, `04-analytics.png`, `05-monitoring.png`, `06-project-overview.png`, `07-hosting-servers.png`, `08-settings.png`
+- Source zip of the branch (written after this log is committed): `/workspace/rover-v0.9.zip`
 
 ## Spec checklist (all 10 sections)
 
@@ -104,17 +121,17 @@ Not yet green at the time this log was first written. Actions should start on th
 - [x] Backward-compatible project data; config version 9 + `migrateV09` + tests
 - [x] Unit / integration (httptest) / regression; gofmt, go vet, `go test -race`
 - [x] Production Windows + Linux builds compile locally
-- [ ] Headless Chromium UI screenshots in `/workspace/rover-shots-v09/`
-- [ ] Windows CI green on this branch (run + artifact URLs)
+- [x] Headless Chromium UI screenshots in `/workspace/rover-shots-v09/`
+- [x] Windows CI green on this branch (run + artifact URLs above)
 
 ### 10. Release prep
 - [x] `Version = "0.9.0"`
 - [x] `docs/INTEGRATIONS.md` and README “New in 0.9”
-- [ ] SHA256 of CI Windows exe / installer (after CI)
-- [ ] Detailed release notes (draft only — do not publish)
-- [ ] Source zip `/workspace/rover-v0.9.zip`
+- [x] SHA256 of CI Windows exe / installer (above)
+- [x] Release notes live in the README “New in 0.9” section and `docs/INTEGRATIONS.md` (no GitHub release body published)
+- [x] Source zip `/workspace/rover-v0.9.zip` (packed after this log lands on the branch)
 - [x] **No GitHub release, draft, prerelease, or `v0.9.0` tag until the user explicitly says so**
 
 ## Honest leftover (do not claim gates pass)
 
-Live nginx/certbot on a public VPS, live tokens for each cloud, Firebase sync write, optional MMDB, email alerts, full Google report proxy, UI screenshots, source zip, and green Windows CI are still open. Release gates have **not** been claimed.
+Still open: live nginx/certbot on a public VPS; live tokens for each cloud; Firebase sync write; optional MMDB; email alerts; full Google report proxy. Those live gates have **not** been claimed. CI, local tests, screenshots and the source zip are done. Do not tag or publish until the user says so.
