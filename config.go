@@ -69,6 +69,10 @@ type Site struct {
 	Failover    *FailoverSettings   `json:"failover,omitempty"`     // "backup" mode settings and state
 	TunnelID    string              `json:"tunnel_id,omitempty"`    // "together" mode: the project's Cloudflare Tunnel
 	TunnelToken string              `json:"tunnel_token,omitempty"` // protected
+
+	// v0.9: hosting engine and Integration Centre assignments (capability -> account id).
+	Engine   string            `json:"engine,omitempty"` // "" default | coolify | nginx | netlify | vercel | firebase | thispc
+	Services map[string]string `json:"services,omitempty"`
 }
 
 // SiteGit links a site to a repository branch for "Pull latest and deploy"
@@ -159,6 +163,14 @@ type Config struct {
 	// v0.7: Cloudflare account (for tunnels) and hosting on this PC.
 	CFAccountID string        `json:"cf_account_id,omitempty"`
 	ThisPC      *ThisPCConfig `json:"this_pc,omitempty"`
+
+	// v0.9 Integration Centre and optional cloud features.
+	Integrations   []*Integration     `json:"integrations,omitempty"`
+	GoogleClientID string             `json:"google_client_id,omitempty"` // public OAuth client; user creates it
+	GoogleAccount  *GoogleAccount     `json:"google_account,omitempty"`
+	CloudSync      *SyncSettings      `json:"cloud_sync,omitempty"`
+	Analytics      *AnalyticsSettings `json:"analytics,omitempty"`
+	Alerts         *AlertSettings     `json:"alerts,omitempty"`
 
 	Sites []*Site `json:"sites"`
 }
@@ -317,6 +329,12 @@ func snapshotConfig() Config {
 		}
 		cp.CFRecordIDs = append([]string(nil), s.CFRecordIDs...)
 		cp.Tags = append([]string(nil), s.Tags...)
+		if s.Services != nil {
+			cp.Services = make(map[string]string, len(s.Services))
+			for k, v := range s.Services {
+				cp.Services[k] = v
+			}
+		}
 		c.Sites[i] = &cp
 	}
 	// Maps and slices are copied too, so readers never race with withConfig.
@@ -363,6 +381,36 @@ func snapshotConfig() Config {
 	for i, p := range cfg.Servers {
 		cp := *p
 		c.Servers[i] = &cp
+	}
+	c.Integrations = make([]*Integration, len(cfg.Integrations))
+	for i, a := range cfg.Integrations {
+		if a == nil {
+			continue
+		}
+		cp := *a
+		if a.Usage != nil {
+			cp.Usage = map[string]any{}
+			for k, v := range a.Usage {
+				cp.Usage[k] = v
+			}
+		}
+		c.Integrations[i] = &cp
+	}
+	if cfg.CloudSync != nil {
+		v := *cfg.CloudSync
+		c.CloudSync = &v
+	}
+	if cfg.Analytics != nil {
+		v := *cfg.Analytics
+		c.Analytics = &v
+	}
+	if cfg.Alerts != nil {
+		v := *cfg.Alerts
+		c.Alerts = &v
+	}
+	if cfg.GoogleAccount != nil {
+		v := *cfg.GoogleAccount
+		c.GoogleAccount = &v
 	}
 	return c
 }

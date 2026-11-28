@@ -18,7 +18,7 @@ import (
 	"strings"
 )
 
-const currentConfigVersion = 8
+const currentConfigVersion = 9
 
 type Group struct {
 	ID    string `json:"id"`
@@ -66,6 +66,9 @@ func migrateConfig(c *Config) (changed bool) {
 		}
 		if c.ConfigVersion < 8 && c.ConfigVersion > 0 {
 			welcomeRename = true // 0.8: Dilreet is now Rover
+		}
+		if c.ConfigVersion < 9 {
+			migrateV09(c)
 		}
 		c.ConfigVersion = currentConfigVersion
 		changed = true
